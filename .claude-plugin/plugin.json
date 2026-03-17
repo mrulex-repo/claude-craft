@@ -1,0 +1,10 @@
+{
+  "name": "claude-craft",
+  "version": "0.1.0",
+  "description": "A collection of commands and utilities for Claude Code",
+  "homepage": "https://github.com/mrulex/claude-craft",
+  "repository": "https://github.com/mrulex/claude-craft",
+  "license": "MIT",
+  "keywords": ["productivity", "utilities", "commands"],
+  "commands": "./commands/"
+}

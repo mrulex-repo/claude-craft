@@ -20,20 +20,29 @@ claude --plugin-dir /path/to/claude-craft
 
 ## Configuration
 
-Create `~/.claude-craft/config.yml` to customize command behaviour:
+Configuration works at two levels — project values override user values.
+
+| Level | Path | Scope |
+|-------|------|-------|
+| User | `~/.claude-craft/config.yml` | All your projects |
+| Project | `.claude/claude-craft/config.yml` | Current repo only |
+
+Use the `/claude-craft:config` command to view or set values interactively, or edit the files directly:
 
 ```yaml
+# example config.yml
 commit-msg:
   auto-approval: false  # skip the approval gate and commit immediately
 ```
 
-If the file does not exist, all commands use their default values.
+If neither file exists, all commands use their default values.
 
 ## Commands
 
 | Command | Description | Dependencies | Config options |
 |---------|-------------|--------------|----------------|
 | `/claude-craft:commit-msg` | Generate a conventional commit message and auto-stage all files | `git` | `auto-approval` (default: `false`) |
+| `/claude-craft:config` | View and set configuration values at user or project level | — | — |
 
 ## Contributing
 

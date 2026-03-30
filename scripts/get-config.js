@@ -1,36 +1,59 @@
 #!/usr/bin/env node
 /**
- * Read a configuration value from ~/.claude-craft/config.yml
+ * Read a configuration value with two-level override:
+ *   1. User level:    ~/.claude-craft/config.yml
+ *   2. Project level: <git-root>/.claude/claude-craft/config.yml
+ *
+ * Project-level values override user-level values.
  *
  * Usage: node get-config.js <command> <key> <default>
  *
- * Config file format (~/.claude-craft/config.yml):
+ * Config file format:
  *   command-name:
  *     key: value
  */
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { execSync } = require('child_process');
 const yaml = require('js-yaml');
 
 const [, , command, key, defaultValue = ''] = process.argv;
 
-const configPath = path.join(os.homedir(), '.claude-craft', 'config.yml');
+function loadYaml(filePath) {
+  if (!fs.existsSync(filePath)) return null;
+  try {
+    const config = yaml.load(fs.readFileSync(filePath, 'utf8'));
+    return config && typeof config === 'object' ? config : null;
+  } catch {
+    return null;
+  }
+}
+
+function findProjectRoot() {
+  try {
+    return execSync('git rev-parse --show-toplevel', {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+  } catch {
+    return process.cwd();
+  }
+}
 
 function readConfig() {
-  if (!fs.existsSync(configPath)) return defaultValue;
+  const userConfig = loadYaml(path.join(os.homedir(), '.claude-craft', 'config.yml'));
+  const projectConfig = loadYaml(
+    path.join(findProjectRoot(), '.claude', 'claude-craft', 'config.yml')
+  );
 
-  const content = fs.readFileSync(configPath, 'utf8');
-  const config = yaml.load(content);
+  const userSection = (userConfig && userConfig[command]) || {};
+  const projectSection = (projectConfig && projectConfig[command]) || {};
 
-  if (!config || typeof config !== 'object') return defaultValue;
+  const merged = { ...userSection, ...projectSection };
 
-  const section = config[command];
-  if (!section || typeof section !== 'object') return defaultValue;
-
-  const value = section[key];
+  const value = merged[key];
   if (value === undefined || value === null) return defaultValue;
-
   return String(value);
 }
 

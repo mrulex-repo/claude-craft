@@ -14,11 +14,26 @@ Or test locally:
 claude --plugin-dir /path/to/claude-craft
 ```
 
+## Requirements
+
+- `node` / `npm` — required by the configuration system
+
+## Configuration
+
+Create `~/.claude-craft/config.yml` to customize command behaviour:
+
+```yaml
+commit-msg:
+  auto-approval: false  # skip the approval gate and commit immediately
+```
+
+If the file does not exist, all commands use their default values.
+
 ## Commands
 
-| Command | Description | Dependencies |
-|---------|-------------|--------------|
-| `/claude-craft:commit-msg` | Generate a conventional commit message and auto-stage all files | `git` |
+| Command | Description | Dependencies | Config options |
+|---------|-------------|--------------|----------------|
+| `/claude-craft:commit-msg` | Generate a conventional commit message and auto-stage all files | `git` | `auto-approval` (default: `false`) |
 
 ## Contributing
 

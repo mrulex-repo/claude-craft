@@ -6,5 +6,6 @@
   "repository": "https://github.com/mrulex/claude-craft",
   "license": "MIT",
   "keywords": ["productivity", "utilities", "commands"],
-  "commands": "./commands/"
+  "commands": "./commands/",
+  "hooks": "./hooks/hooks.json"
 }

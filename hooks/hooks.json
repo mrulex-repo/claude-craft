@@ -30,6 +30,25 @@
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/commit-guard.js\""
           }
         ]
+      },
+      {
+        "matcher": "Edit|Write|NotebookEdit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/change-detector.js\""
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/verify-changes.js\""
+          }
+        ]
       }
     ]
   }

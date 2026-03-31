@@ -1,0 +1,9 @@
+{
+  "name": "claude-craft",
+  "private": true,
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "pretest": "npm install --prefix scripts --silent",
+    "test": "node --test tests/*.test.js"
+  }
+}

@@ -11,6 +11,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { execSync } = require('child_process');
+const { logError } = require('./hook-logger');
 
 function isAutoApprovalEnabled() {
   try {
@@ -31,12 +32,14 @@ function isGitCommit(command) {
 }
 
 let input = '';
+let cwd = process.cwd();
 process.stdin.setEncoding('utf8');
 process.stdin.on('data', chunk => (input += chunk));
 process.stdin.on('end', () => {
   try {
     const data = JSON.parse(input);
-    const { hook_event_name, tool_name, tool_input, cwd } = data;
+    const { hook_event_name, tool_name, tool_input } = data;
+    cwd = data.cwd || cwd;
 
     if (tool_name !== 'Bash') return;
     if (!isGitCommit(tool_input?.command)) return;
@@ -62,7 +65,7 @@ process.stdin.on('end', () => {
     } else if (hook_event_name === 'PostToolUse') {
       try { fs.unlinkSync(markerPath); } catch { /* ok if already gone */ }
     }
-  } catch {
-    // Silently fail — hooks must be resilient
+  } catch (err) {
+    logError('commit-guard', err, cwd);
   }
 });

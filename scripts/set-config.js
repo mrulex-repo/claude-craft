@@ -11,11 +11,28 @@ const path = require('path');
 const os = require('os');
 const { execSync } = require('child_process');
 const yaml = require('js-yaml');
+const { isKnownCommand, isKnownKey, knownCommands, knownKeys } = require('./config-schema');
 
 const [, , level, command, key, value] = process.argv;
 
 if (!level || !command || !key || value === undefined) {
   process.stderr.write('Usage: set-config.js <level> <command> <key> <value>\n');
+  process.exit(1);
+}
+
+if (!isKnownCommand(command)) {
+  process.stderr.write(
+    `ERROR: Unknown command "${command}".\n` +
+    `       Supported commands: ${knownCommands().join(', ')}\n`
+  );
+  process.exit(1);
+}
+
+if (!isKnownKey(command, key)) {
+  process.stderr.write(
+    `ERROR: Unknown key "${key}" for command "${command}".\n` +
+    `       Supported keys: ${knownKeys(command).join(', ')}\n`
+  );
   process.exit(1);
 }
 

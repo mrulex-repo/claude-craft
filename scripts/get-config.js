@@ -17,6 +17,7 @@ const path = require('path');
 const os = require('os');
 const { execSync } = require('child_process');
 const yaml = require('js-yaml');
+const { isKnownCommand, isKnownKey, getKeySchema, knownCommands, knownKeys } = require('./config-schema');
 
 const [, , command, key, defaultValue = ''] = process.argv;
 
@@ -42,6 +43,22 @@ function findProjectRoot() {
 }
 
 function readConfig() {
+  if (!isKnownCommand(command)) {
+    process.stderr.write(
+      `ERROR: Unknown command "${command}".\n` +
+      `       Supported commands: ${knownCommands().join(', ')}\n`
+    );
+    process.exit(1);
+  }
+
+  if (!isKnownKey(command, key)) {
+    process.stderr.write(
+      `ERROR: Unknown key "${key}" for command "${command}".\n` +
+      `       Supported keys: ${knownKeys(command).join(', ')}\n`
+    );
+    process.exit(1);
+  }
+
   const userConfig = loadYaml(path.join(os.homedir(), '.claude-craft', 'config.yml'));
   const projectConfig = loadYaml(
     path.join(findProjectRoot(), '.claude', 'claude-craft', 'config.yml')
@@ -53,12 +70,32 @@ function readConfig() {
   const merged = { ...userSection, ...projectSection };
 
   const value = merged[key];
-  if (value === undefined || value === null) return defaultValue;
-  return String(value);
+  if (value !== undefined && value !== null) return String(value);
+
+  const keySchema = getKeySchema(command, key);
+
+  if (keySchema.required) {
+    if (keySchema.default === undefined) {
+      process.stderr.write(
+        `ERROR: Required key "${command}.${key}" is not set and has no default value.\n` +
+        `       ${keySchema.description}\n`
+      );
+      process.exit(1);
+    }
+    process.stderr.write(
+      `INFO: "${command}.${key}" is not set, using default: ${JSON.stringify(keySchema.default)}\n`
+    );
+    return String(keySchema.default);
+  }
+
+  return defaultValue !== '' ? defaultValue
+    : keySchema.default !== undefined ? String(keySchema.default)
+    : '';
 }
 
 try {
   process.stdout.write(readConfig());
-} catch {
+} catch (err) {
+  if (err.code === undefined) throw err; // re-throw process.exit signals handled above
   process.stdout.write(defaultValue);
 }

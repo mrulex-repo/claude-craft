@@ -1,5 +1,5 @@
 ---
-allowed-tools: Bash(git rev-parse:*), Bash(cat:*), Bash(node ~/.claude-craft/set-config.js:*)
+allowed-tools: Bash(git rev-parse:*), Bash(cat:*), Bash(node ~/.claude-craft/set-config.js:*), Bash(node ~/.claude-craft/validate-config.js:*)
 description: View and set claude-craft configuration values
 ---
 
@@ -11,11 +11,18 @@ description: View and set claude-craft configuration values
 **Project level** (`.claude/claude-craft/config.yml`):
 !`cat "$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/claude-craft/config.yml" 2>/dev/null || echo "(empty)"`
 
+## Validation
+
+!`node ~/.claude-craft/validate-config.js`
+
 ## Available Options
 
 | Command | Key | Default | Description |
 |---------|-----|---------|-------------|
-| `commit-msg` | `auto-approval` | `false` | Skip the approval gate and commit immediately |
+| `commit-msg` | `auto-approval` | `false` | When `false`, Claude presents the commit message and waits for your approval before committing. Set to `true` to skip the gate and commit immediately. |
+| `verify` | `enabled` | `false` | Explicitly enable verification even without commands |
+| `verify` | `commands` | `[]` | Shell commands to run after changes are detected |
+| `verify` | `timeout` | `120` | Timeout in seconds for each verification command |
 
 ## Instructions
 

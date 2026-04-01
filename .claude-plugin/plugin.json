@@ -7,7 +7,6 @@
   "license": "MIT",
   "keywords": ["productivity", "utilities", "commands"],
   "commands": "./commands/",
-  "hooks": "./hooks/hooks.json",
   "mcpServers": {
     "context7": {
       "command": "node",

@@ -6,10 +6,10 @@
 
 ### Standard
 
-Install directly from GitHub:
+Install directly from GitHub using the `owner/repo` format:
 
 ```bash
-claude plugin install https://github.com/mrulex/claude-craft
+claude plugin install mrulex-repo/claude-craft
 ```
 
 Commands are then available as `/ccraft:commit-msg`, `/ccraft:config`, etc.
@@ -19,7 +19,7 @@ Commands are then available as `/ccraft:commit-msg`, `/ccraft:config`, etc.
 Clone the repo and point Claude Code at the local directory:
 
 ```bash
-git clone https://github.com/mrulex/claude-craft
+git clone https://github.com/mrulex-repo/claude-craft
 claude --plugin-dir /path/to/claude-craft
 ```
 

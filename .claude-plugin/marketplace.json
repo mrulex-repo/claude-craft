@@ -1,0 +1,14 @@
+{
+  "name": "mrulex - Claude Craft public plugin",
+  "owner": { "name": "mrulex" },
+  "plugins": [
+    {
+      "name": "Claude Craft",
+      "source": {
+        "source": "github",
+        "repo": "mrulex-repo/claude-craft"
+      }
+    }
+  ]
+}
+

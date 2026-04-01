@@ -18,6 +18,26 @@
 'use strict';
 
 const SCHEMA = {
+  'mcp': {
+    'context7.enabled': {
+      type: 'boolean',
+      required: false,
+      default: true,
+      description: 'Enable the context7 MCP server (library documentation lookup)',
+    },
+    'sequential-thinking.enabled': {
+      type: 'boolean',
+      required: false,
+      default: false,
+      description: 'Enable the sequential-thinking MCP server (structured reasoning)',
+    },
+    'github.enabled': {
+      type: 'boolean',
+      required: false,
+      default: true,
+      description: 'Enable the GitHub MCP server — requires GITHUB_PERSONAL_ACCESS_TOKEN env var',
+    },
+  },
   'commit-msg': {
     'auto-approval': {
       type: 'boolean',
@@ -48,6 +68,50 @@ const SCHEMA = {
   },
 };
 
+/**
+ * Navigate a dotted key path into an object.
+ *   getNestedValue({ context7: { enabled: true } }, 'context7.enabled') → true
+ *   getNestedValue({ 'auto-approval': false }, 'auto-approval') → false
+ */
+function getNestedValue(obj, dottedKey) {
+  return dottedKey.split('.').reduce((acc, part) => {
+    return acc !== null && acc !== undefined && typeof acc === 'object' ? acc[part] : undefined;
+  }, obj);
+}
+
+/**
+ * Write a value at a dotted key path, creating intermediate objects as needed.
+ *   setNestedValue(obj, 'context7.enabled', true) → obj.context7.enabled = true
+ */
+function setNestedValue(obj, dottedKey, value) {
+  const parts = dottedKey.split('.');
+  let cur = obj;
+  for (let i = 0; i < parts.length - 1; i++) {
+    if (!cur[parts[i]] || typeof cur[parts[i]] !== 'object') cur[parts[i]] = {};
+    cur = cur[parts[i]];
+  }
+  cur[parts[parts.length - 1]] = value;
+}
+
+/**
+ * Flatten a nested object to dotted-path keys (one level per nesting).
+ * Arrays are treated as leaf values and not traversed.
+ *   flattenKeys({ context7: { enabled: true } }) → { 'context7.enabled': true }
+ *   flattenKeys({ commands: ['npm test'] })       → { commands: ['npm test'] }
+ */
+function flattenKeys(obj, prefix) {
+  const flat = {};
+  for (const [k, v] of Object.entries(obj)) {
+    const key = prefix ? `${prefix}.${k}` : k;
+    if (v !== null && typeof v === 'object' && !Array.isArray(v)) {
+      Object.assign(flat, flattenKeys(v, key));
+    } else {
+      flat[key] = v;
+    }
+  }
+  return flat;
+}
+
 function isKnownCommand(command) {
   return Object.prototype.hasOwnProperty.call(SCHEMA, command);
 }
@@ -71,4 +135,4 @@ function knownKeys(command) {
   return Object.keys(SCHEMA[command]);
 }
 
-module.exports = { SCHEMA, isKnownCommand, isKnownKey, getKeySchema, knownCommands, knownKeys };
+module.exports = { SCHEMA, isKnownCommand, isKnownKey, getKeySchema, knownCommands, knownKeys, getNestedValue, setNestedValue, flattenKeys };

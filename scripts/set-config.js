@@ -11,7 +11,7 @@ const path = require('path');
 const os = require('os');
 const { execSync } = require('child_process');
 const yaml = require('js-yaml');
-const { isKnownCommand, isKnownKey, knownCommands, knownKeys } = require('./config-schema');
+const { isKnownCommand, isKnownKey, knownCommands, knownKeys, setNestedValue } = require('./config-schema');
 
 const [, , level, command, key, value] = process.argv;
 
@@ -78,7 +78,7 @@ if (value === 'true') parsed = true;
 else if (value === 'false') parsed = false;
 else if (value !== '' && !isNaN(value)) parsed = Number(value);
 
-config[command][key] = parsed;
+setNestedValue(config[command], key, parsed);
 
 fs.writeFileSync(configPath, yaml.dump(config), 'utf8');
 process.stdout.write(`[${level}] ${command}.${key} = ${value}\n`);

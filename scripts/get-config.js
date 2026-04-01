@@ -17,7 +17,7 @@ const path = require('path');
 const os = require('os');
 const { execSync } = require('child_process');
 const yaml = require('js-yaml');
-const { isKnownCommand, isKnownKey, getKeySchema, knownCommands, knownKeys } = require('./config-schema');
+const { isKnownCommand, isKnownKey, getKeySchema, knownCommands, knownKeys, getNestedValue } = require('./config-schema');
 
 const [, , command, key, defaultValue = ''] = process.argv;
 
@@ -69,7 +69,7 @@ function readConfig() {
 
   const merged = { ...userSection, ...projectSection };
 
-  const value = merged[key];
+  const value = getNestedValue(merged, key);
   if (value !== undefined && value !== null) return String(value);
 
   const keySchema = getKeySchema(command, key);

@@ -1,11 +1,11 @@
 # Claude Craft
 
-A Claude Code plugin with a curated set of commands and utilities to boost your development workflow.
+**Claude Craft** (plugin name: `ccraft`) is a Claude Code plugin with a curated set of commands and utilities to boost your development workflow. The short name `ccraft` is what you use in commands, e.g. `/ccraft:commit-msg`.
 
 ## Installation
 
 ```bash
-claude plugin install claude-craft
+claude plugin install ccraft
 ```
 
 Or test locally:
@@ -16,7 +16,38 @@ claude --plugin-dir /path/to/claude-craft
 
 ## Requirements
 
-- `node` / `npm` — required by the configuration system
+- `node` / `npm` — required by the configuration system and MCP wrappers
+
+## MCP Servers
+
+The plugin bundles three MCP servers that are enabled by default (except `sequential-thinking`):
+
+| MCP | Default | Description |
+|-----|---------|-------------|
+| `context7` | enabled | Library documentation lookup |
+| `sequential-thinking` | disabled | Structured reasoning |
+| `github` | enabled | Repository and PR operations — requires `GITHUB_PERSONAL_ACCESS_TOKEN` |
+
+Toggle them via config:
+
+```yaml
+# ~/.claude-craft/config.yml  or  .claude/claude-craft/config.yml
+mcp:
+  context7:
+    enabled: true
+  sequential-thinking:
+    enabled: false
+  github:
+    enabled: true   # export GITHUB_PERSONAL_ACCESS_TOKEN=<token>
+```
+
+Or with the `/ccraft:config` command:
+
+```bash
+/ccraft:config set user mcp context7.enabled false
+```
+
+Changes take effect on the next session start.
 
 ## Configuration
 
@@ -27,7 +58,7 @@ Configuration works at two levels — project values override user values.
 | User | `~/.claude-craft/config.yml` | All your projects |
 | Project | `.claude/claude-craft/config.yml` | Current repo only |
 
-Use the `/claude-craft:config` command to view or set values interactively, or edit the files directly:
+Use the `/ccraft:config` command to view or set values interactively, or edit the files directly:
 
 ```yaml
 # example config.yml
@@ -35,14 +66,14 @@ commit-msg:
   auto-approval: false  # skip the approval gate and commit immediately
 ```
 
-If neither file exists, all commands use their default values.
+If neither file exists, all commands and MCPs use their default values.
 
 ## Commands
 
 | Command | Description | Dependencies | Config options |
 |---------|-------------|--------------|----------------|
-| `/claude-craft:commit-msg` | Generate a conventional commit message and auto-stage all files | `git` | `auto-approval` (default: `false`) |
-| `/claude-craft:config` | View and set configuration values at user or project level | — | — |
+| `/ccraft:commit-msg` | Generate a conventional commit message and auto-stage all files | `git` | `auto-approval` (default: `false`) |
+| `/ccraft:config` | View and set configuration values at user or project level | — | — |
 
 ## Contributing
 

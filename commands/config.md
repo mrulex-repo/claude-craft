@@ -1,6 +1,6 @@
 ---
 allowed-tools: Bash(git rev-parse:*), Bash(cat:*), Bash(node ~/.claude-craft/set-config.js:*), Bash(node ~/.claude-craft/validate-config.js:*)
-description: View and set claude-craft configuration values
+description: View and set Claude Craft configuration values
 ---
 
 ## Current Configuration

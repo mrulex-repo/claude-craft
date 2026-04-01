@@ -21,7 +21,7 @@ const path = require('path');
 const os = require('os');
 const { execSync } = require('child_process');
 const yaml = require('js-yaml');
-const { SCHEMA, isKnownCommand, isKnownKey, knownCommands, knownKeys } = require('./config-schema');
+const { SCHEMA, isKnownCommand, isKnownKey, knownCommands, knownKeys, getNestedValue, flattenKeys } = require('./config-schema');
 
 function loadYaml(filePath) {
   if (!fs.existsSync(filePath)) return null;
@@ -61,7 +61,7 @@ function validateFile(config, filePath) {
     const section = config[command];
     if (!section || typeof section !== 'object') continue;
 
-    for (const key of Object.keys(section)) {
+    for (const key of Object.keys(flattenKeys(section))) {
       if (!isKnownKey(command, key)) {
         errors.push(
           `ERROR: Unknown key "${key}" for command "${command}" in ${filePath}.\n` +
@@ -87,7 +87,7 @@ function validateRequired(merged) {
       const keySchema = SCHEMA[command][key];
       if (!keySchema.required) continue;
 
-      const value = section[key];
+      const value = getNestedValue(section, key);
       if (value !== undefined && value !== null) continue;
 
       if (keySchema.default === undefined) {

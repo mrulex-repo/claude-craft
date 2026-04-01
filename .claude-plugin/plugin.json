@@ -1,11 +1,25 @@
 {
-  "name": "claude-craft",
+  "name": "ccraft",
   "version": "0.1.0",
-  "description": "A collection of commands and utilities for Claude Code",
+  "description": "Claude Craft: A collection of commands and utilities for Claude Code",
   "homepage": "https://github.com/mrulex/claude-craft",
   "repository": "https://github.com/mrulex/claude-craft",
   "license": "MIT",
   "keywords": ["productivity", "utilities", "commands"],
   "commands": "./commands/",
-  "hooks": "./hooks/hooks.json"
+  "hooks": "./hooks/hooks.json",
+  "mcpServers": {
+    "context7": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/mcp-wrapper.js", "context7", "npx", "-y", "@upstash/context7-mcp"]
+    },
+    "sequential-thinking": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/mcp-wrapper.js", "sequential-thinking", "npx", "-y", "@modelcontextprotocol/server-sequential-thinking"]
+    },
+    "github": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/mcp-wrapper.js", "github", "npx", "-y", "@modelcontextprotocol/server-github"]
+    }
+  }
 }

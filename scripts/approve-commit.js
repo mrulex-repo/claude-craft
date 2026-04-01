@@ -23,9 +23,18 @@ function run(cmd, args) {
   return result.stdout.trim();
 }
 
-// Parse --except arguments
-const exceptIndex = process.argv.indexOf('--except');
-const exclusions = exceptIndex !== -1 ? process.argv.slice(exceptIndex + 1) : [];
+// Require --from-workflow flag — enforces that this script is only called via /commit-msg
+if (!process.argv.includes('--from-workflow')) {
+  process.stderr.write(
+    'Error: approve-commit.js must be run through the /commit-msg workflow, not directly.\n'
+  );
+  process.exit(1);
+}
+
+// Parse --except arguments (stop before --from-workflow)
+const args = process.argv.slice(2).filter(a => a !== '--from-workflow');
+const exceptIndex = args.indexOf('--except');
+const exclusions = exceptIndex !== -1 ? args.slice(exceptIndex + 1) : [];
 
 // Stage everything
 run('git', ['add', '.']);

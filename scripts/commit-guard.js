@@ -31,6 +31,10 @@ function isGitCommit(command) {
   return /\bgit\s+commit\b/.test(command || '');
 }
 
+function isApproveCommit(command) {
+  return /approve-commit\.js/.test(command || '');
+}
+
 let input = '';
 let cwd = process.cwd();
 process.stdin.setEncoding('utf8');
@@ -42,6 +46,17 @@ process.stdin.on('end', () => {
     cwd = data.cwd || cwd;
 
     if (tool_name !== 'Bash') return;
+
+    if (isApproveCommit(tool_input?.command)) {
+      if (!/--from-workflow/.test(tool_input?.command)) {
+        process.stderr.write(
+          'approve-commit blocked: must be called through the /commit-msg workflow.\n'
+        );
+        process.exit(2);
+      }
+      return; // flag present — allow through
+    }
+
     if (!isGitCommit(tool_input?.command)) return;
     if (isAutoApprovalEnabled()) return;
 

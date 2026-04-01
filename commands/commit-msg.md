@@ -1,5 +1,5 @@
 ---
-allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git branch:*), Bash(git commit:*), Bash(node ~/.claude-craft/approve-commit.js:*)
+allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git branch:*), Bash(git commit:*), Bash(node ~/.claude-craft/approve-commit.js --from-workflow:*)
 description: Generate JIRA commit message and auto-stage all files
 ---
 
@@ -28,9 +28,9 @@ description: Generate JIRA commit message and auto-stage all files
 
 4. **Execution Logic:**
    - **Standard Approval ("yes", "y", "go"):**
-     - Run `node ~/.claude-craft/approve-commit.js`
+     - Run `node ~/.claude-craft/approve-commit.js --from-workflow`
      - Run `git commit -m "<drafted message>"`
    - **Approval with Exclusions (e.g., "go except config.json"):**
-     - Run `node ~/.claude-craft/approve-commit.js --except <file1> <file2> ...`
+     - Run `node ~/.claude-craft/approve-commit.js --from-workflow --except <file1> <file2> ...`
      - Run `git commit -m "<drafted message>"`
    - **Custom Message:** If you provide a new string, use that for the commit message.

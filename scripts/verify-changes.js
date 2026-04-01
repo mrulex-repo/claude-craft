@@ -10,11 +10,17 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { execSync, spawnSync } = require('child_process');
-const yaml = require('js-yaml');
 const { logError } = require('./hook-logger');
 
+let yaml = null;
+try {
+  yaml = require(path.join(os.homedir(), '.claude-craft', 'node_modules', 'js-yaml'));
+} catch {
+  // setup.js hasn't run yet; verify will be skipped
+}
+
 function loadYaml(filePath) {
-  if (!fs.existsSync(filePath)) return null;
+  if (!yaml || !fs.existsSync(filePath)) return null;
   try {
     const config = yaml.load(fs.readFileSync(filePath, 'utf8'));
     return config && typeof config === 'object' ? config : null;

@@ -10,8 +10,15 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { execSync } = require('child_process');
-const yaml = require('js-yaml');
 const { isKnownCommand, isKnownKey, knownCommands, knownKeys, setNestedValue } = require('./config-schema');
+
+let yaml = null;
+try {
+  yaml = require(path.join(os.homedir(), '.claude-craft', 'node_modules', 'js-yaml'));
+} catch {
+  process.stderr.write('ERROR: Setup not yet complete. Restart your session and try again.\n');
+  process.exit(1);
+}
 
 const [, , level, command, key, value] = process.argv;
 

@@ -20,11 +20,17 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { execSync } = require('child_process');
-const yaml = require('js-yaml');
 const { SCHEMA, isKnownCommand, isKnownKey, knownCommands, knownKeys, getNestedValue, flattenKeys } = require('./config-schema');
 
+let yaml = null;
+try {
+  yaml = require(path.join(os.homedir(), '.claude-craft', 'node_modules', 'js-yaml'));
+} catch {
+  // setup.js hasn't run yet
+}
+
 function loadYaml(filePath) {
-  if (!fs.existsSync(filePath)) return null;
+  if (!yaml || !fs.existsSync(filePath)) return null;
   try {
     const config = yaml.load(fs.readFileSync(filePath, 'utf8'));
     return config && typeof config === 'object' ? config : null;
@@ -108,6 +114,11 @@ function validateRequired(merged) {
 }
 
 function run() {
+  if (!yaml) {
+    process.stdout.write('Configuration validation skipped: setup not yet complete. Restart your session.\n');
+    process.exit(0);
+  }
+
   const userConfigPath = path.join(os.homedir(), '.claude-craft', 'config.yml');
   const projectConfigPath = path.join(
     findProjectRoot(),

@@ -6,7 +6,7 @@
   },
   "plugins": [
     {
-      "name": "Claude Craft",
+      "name": "ccraft",
       "description": "Claude Craft: A collection of commands and utilities for Claude Code",
       "source": {
         "source": "github",

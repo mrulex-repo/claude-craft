@@ -4,14 +4,29 @@
 
 ## Installation
 
+### Standard
+
+Install directly from GitHub:
+
 ```bash
-claude plugin install ccraft
+claude plugin install https://github.com/mrulex/claude-craft
 ```
 
-Or test locally:
+Commands are then available as `/ccraft:commit-msg`, `/ccraft:config`, etc.
+
+### Development
+
+Clone the repo and point Claude Code at the local directory:
 
 ```bash
+git clone https://github.com/mrulex/claude-craft
 claude --plugin-dir /path/to/claude-craft
+```
+
+After editing commands or scripts, reload without restarting:
+
+```
+/reload-plugins
 ```
 
 ## Requirements

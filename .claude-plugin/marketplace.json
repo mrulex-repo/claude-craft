@@ -1,9 +1,13 @@
 {
-  "name": "mrulex - Claude Craft public plugin",
+  "name": "claude-craft",
   "owner": { "name": "mrulex" },
+  "metadata": {
+    "description": "Claude craft tools and extensions"
+  },
   "plugins": [
     {
       "name": "Claude Craft",
+      "description": "Claude Craft: A collection of commands and utilities for Claude Code",
       "source": {
         "source": "github",
         "repo": "mrulex-repo/claude-craft"

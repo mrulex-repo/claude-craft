@@ -37,13 +37,14 @@ function isRead(command) {
   return SHELL_READ.test(command) || INLINE_READ.test(command);
 }
 
-// Allow: node executing a script file (hooks and commands do this legitimately)
-//   e.g.  node ~/.claude-craft/get-config.js
-// Block: everything else that touches protected paths
+// Allow: node executing a script file at a protected path
+//   e.g.  node ~/.claude-craft/get-config.js [args] && other-stuff
+// Block: inline eval (node -e "...readFileSync...") and everything else
 function isAllowedExecution(command) {
-  return /\bnode\b/.test(command) &&
-    !INLINE_READ.test(command) &&
-    !/\b(cat|head|tail|less|more|bat|strings|hexdump|xxd|od)\b/.test(command);
+  if (INLINE_READ.test(command)) return false;
+  // node must directly precede the protected path (no pipes/semis between them)
+  return /\bnode\b\s+[^|;&\n]*~\/\.claude-craft\/\S+\.js/.test(command) ||
+    /\bnode\b\s+[^|;&\n]*\/\.claude\/plugins\/cache\/claude-craft\/\S+\.js/.test(command);
 }
 
 let input = '';

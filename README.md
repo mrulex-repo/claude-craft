@@ -6,10 +6,11 @@
 
 ### Standard
 
-Install directly from GitHub using the `owner/repo` format:
+Register the marketplace, then install the plugin:
 
 ```bash
-claude plugin install mrulex-repo/claude-craft
+claude plugin marketplace add mrulex-repo/claude-craft
+claude plugin install ccraft@claude-craft
 ```
 
 Commands are then available as `/ccraft:commit-msg`, `/ccraft:config`, etc.

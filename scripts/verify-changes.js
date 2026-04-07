@@ -130,7 +130,7 @@ process.stdin.on('end', () => {
           lines.push('');
         }
       }
-      process.stdout.write(lines.join('\n'));
+      process.stderr.write(lines.join('\n'));
       process.exit(2);
     }
   } catch (err) {

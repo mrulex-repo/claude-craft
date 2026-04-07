@@ -98,6 +98,8 @@ process.stdin.on('end', () => {
         command: cmd,
         exitCode: result.status ?? 1,
         passed: result.status === 0,
+        stdout: result.stdout || '',
+        stderr: result.stderr || '',
       };
     });
 
@@ -117,6 +119,20 @@ process.stdin.on('end', () => {
       ) + '\n',
       'utf8'
     );
+
+    if (!allPassed) {
+      const lines = ['Verification failed. Fix the errors before finishing.\n'];
+      for (const r of results) {
+        if (!r.passed) {
+          lines.push(`Command: ${r.command} (exit ${r.exitCode})`);
+          if (r.stdout.trim()) lines.push(r.stdout.trimEnd());
+          if (r.stderr.trim()) lines.push(r.stderr.trimEnd());
+          lines.push('');
+        }
+      }
+      process.stdout.write(lines.join('\n'));
+      process.exit(2);
+    }
   } catch (err) {
     logError('verify-changes', err, cwd);
   }

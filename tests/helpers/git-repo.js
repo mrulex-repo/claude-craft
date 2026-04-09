@@ -26,11 +26,20 @@ function createTempRepo() {
 
 /**
  * Create a temp directory to act as HOME for config isolation.
- * Pre-creates the ~/.claude-craft directory.
+ * Pre-creates the ~/.claude-craft directory with js-yaml available so
+ * scripts that lazy-load it from ~/.claude-craft/node_modules work in tests.
  */
 function createTempHome() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'claude-craft-home-'));
-  fs.mkdirSync(path.join(dir, '.claude-craft'), { recursive: true });
+  const craftDir = path.join(dir, '.claude-craft');
+  fs.mkdirSync(craftDir, { recursive: true });
+  // Symlink node_modules from scripts/ so js-yaml is resolvable without
+  // running setup.js (which would require a real npm install).
+  const srcModules = path.resolve(__dirname, '../../scripts/node_modules');
+  const destModules = path.join(craftDir, 'node_modules');
+  if (fs.existsSync(srcModules) && !fs.existsSync(destModules)) {
+    fs.symlinkSync(srcModules, destModules);
+  }
   return dir;
 }
 

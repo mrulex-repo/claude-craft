@@ -67,6 +67,50 @@ describe('change-detector', () => {
     assert.equal(fs.existsSync(pendingPath()), true);
   });
 
+  it('creates .claude/.gitignore with required entries when verify is enabled', () => {
+    writeProjectConfig(repoDir, 'verify:\n  enabled: true\n');
+    spawnHook('change-detector.js', payload(), { env: env() });
+    const gitignorePath = path.join(repoDir, '.claude', '.gitignore');
+    assert.equal(fs.existsSync(gitignorePath), true);
+    const contents = fs.readFileSync(gitignorePath, 'utf8');
+    assert.ok(contents.includes('changes_pending'));
+    assert.ok(contents.includes('changes_detected'));
+  });
+
+  it('appends missing entries to existing .claude/.gitignore', () => {
+    writeProjectConfig(repoDir, 'verify:\n  enabled: true\n');
+    const claudeDir = path.join(repoDir, '.claude');
+    fs.mkdirSync(claudeDir, { recursive: true });
+    fs.writeFileSync(path.join(claudeDir, '.gitignore'), 'some_other_entry\n', 'utf8');
+    spawnHook('change-detector.js', payload(), { env: env() });
+    const contents = fs.readFileSync(path.join(claudeDir, '.gitignore'), 'utf8');
+    assert.ok(contents.includes('some_other_entry'));
+    assert.ok(contents.includes('changes_pending'));
+    assert.ok(contents.includes('changes_detected'));
+  });
+
+  it('does not duplicate entries in .claude/.gitignore', () => {
+    writeProjectConfig(repoDir, 'verify:\n  enabled: true\n');
+    const claudeDir = path.join(repoDir, '.claude');
+    fs.mkdirSync(claudeDir, { recursive: true });
+    fs.writeFileSync(path.join(claudeDir, '.gitignore'), 'changes_pending\nchanges_detected\n', 'utf8');
+    spawnHook('change-detector.js', payload(), { env: env() });
+    spawnHook('change-detector.js', payload(), { env: env() });
+    const contents = fs.readFileSync(path.join(claudeDir, '.gitignore'), 'utf8');
+    assert.equal(contents.split('changes_pending').length - 1, 1);
+    assert.equal(contents.split('changes_detected').length - 1, 1);
+  });
+
+  it('creates changes_pending in project root when cwd is a subdirectory', () => {
+    writeProjectConfig(repoDir, 'verify:\n  enabled: true\n');
+    const subDir = path.join(repoDir, 'src');
+    fs.mkdirSync(subDir, { recursive: true });
+    spawnHook('change-detector.js', { ...payload(), cwd: subDir }, { env: env() });
+    assert.equal(fs.existsSync(pendingPath()), true);
+    // Must NOT create a stray .claude folder in the subdirectory
+    assert.equal(fs.existsSync(path.join(subDir, '.claude', 'changes_pending')), false);
+  });
+
   it('project config overrides user config', () => {
     // User says disabled, project says enabled — project wins
     fs.writeFileSync(

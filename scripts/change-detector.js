@@ -56,6 +56,19 @@ function isVerifyEnabled(cwd) {
   return Array.isArray(commands) && commands.length > 0;
 }
 
+const GITIGNORE_ENTRIES = ['changes_pending', 'changes_detected'];
+
+function ensureGitignoreEntries(claudeDir) {
+  const gitignorePath = path.join(claudeDir, '.gitignore');
+  let existing = '';
+  try { existing = fs.readFileSync(gitignorePath, 'utf8'); } catch { /* new file */ }
+  const lines = existing ? existing.split('\n') : [];
+  const missing = GITIGNORE_ENTRIES.filter(e => !lines.includes(e));
+  if (missing.length === 0) return;
+  const updated = existing + (existing && !existing.endsWith('\n') ? '\n' : '') + missing.join('\n') + '\n';
+  fs.writeFileSync(gitignorePath, updated, 'utf8');
+}
+
 let input = '';
 let cwd = process.cwd();
 process.stdin.setEncoding('utf8');
@@ -67,8 +80,10 @@ process.stdin.on('end', () => {
 
     if (!isVerifyEnabled(cwd)) return;
 
-    const pendingPath = path.join(cwd, '.claude', 'changes_pending');
-    fs.mkdirSync(path.dirname(pendingPath), { recursive: true });
+    const claudeDir = path.join(findProjectRoot(cwd), '.claude');
+    const pendingPath = path.join(claudeDir, 'changes_pending');
+    fs.mkdirSync(claudeDir, { recursive: true });
+    ensureGitignoreEntries(claudeDir);
     fs.writeFileSync(pendingPath, '', 'utf8');
   } catch (err) {
     logError('change-detector', err, cwd);

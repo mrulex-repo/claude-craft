@@ -28,7 +28,7 @@ describe('verify-changes', () => {
   const pendingPath = () => path.join(repoDir, '.claude', 'changes_pending');
   const detectedPath = () => path.join(repoDir, '.claude', 'changes_detected');
 
-  const run = () => spawnHook('verify-changes.js', { cwd: repoDir }, { env: env() });
+  const run = (cwd = repoDir) => spawnHook('verify-changes.js', { cwd }, { env: env() });
 
   it('does nothing when changes_pending does not exist', () => {
     run();
@@ -95,6 +95,21 @@ describe('verify-changes', () => {
     const result = JSON.parse(fs.readFileSync(detectedPath(), 'utf8'));
     assert.equal(result.commands[0].exitCode, 1);
     assert.equal(result.commands[0].command, 'false');
+  });
+
+  it('reads and writes state files in project root when cwd is a subdirectory', () => {
+    fs.writeFileSync(pendingPath(), '');
+    writeUntracked(repoDir, 'modified.txt');
+    const subDir = path.join(repoDir, 'src');
+    fs.mkdirSync(subDir, { recursive: true });
+
+    run(subDir);
+
+    assert.equal(fs.existsSync(pendingPath()), false);
+    assert.equal(fs.existsSync(detectedPath()), true);
+    // Must NOT create stray state files in the subdirectory
+    assert.equal(fs.existsSync(path.join(subDir, '.claude', 'changes_pending')), false);
+    assert.equal(fs.existsSync(path.join(subDir, '.claude', 'changes_detected')), false);
   });
 
   it('always cleans up changes_pending even when verification fails', () => {

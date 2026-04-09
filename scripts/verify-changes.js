@@ -73,8 +73,9 @@ process.stdin.on('end', () => {
   try {
     const data = JSON.parse(input);
     cwd = data.cwd || cwd;
-    const pendingPath = path.join(cwd, '.claude', 'changes_pending');
-    const detectedPath = path.join(cwd, '.claude', 'changes_detected');
+    const projectRoot = findProjectRoot(cwd);
+    const pendingPath = path.join(projectRoot, '.claude', 'changes_pending');
+    const detectedPath = path.join(projectRoot, '.claude', 'changes_detected');
 
     if (!fs.existsSync(pendingPath)) return;
 

@@ -91,6 +91,41 @@ If neither file exists, all commands and MCPs use their default values.
 | `/ccraft:commit-msg` | Generate a conventional commit message and auto-stage all files | `git` | `auto-approval` (default: `false`) |
 | `/ccraft:config` | View and set configuration values at user or project level | — | — |
 
+## Automatic Behaviors
+
+Claude Craft installs hooks that run silently in the background on every session.
+
+### Commit Guard
+
+Prevents Claude from running `git commit` unless it was initiated through the `/ccraft:commit-msg` workflow. When you approve a commit message, a snapshot of the staged tree is saved. The guard verifies the snapshot matches before allowing the commit through, and rejects it if the staged files have changed since approval.
+
+Set `commit-msg.auto-approval: true` to disable the gate entirely.
+
+### Verify
+
+Runs shell commands automatically whenever Claude modifies files. Useful for keeping tests green or linting in sync without having to ask Claude explicitly.
+
+**How it works:**
+
+1. After every file edit (Edit, Write, Bash), a `changes_pending` flag is written to `.claude/`.
+2. When Claude finishes responding (Stop), if the flag is present and git shows actual changes, the configured commands run.
+3. Results are written to `.claude/changes_detected`. If any command fails, the output is surfaced to Claude before it can reply, so it can fix the issue.
+
+Both `.claude/changes_pending` and `.claude/changes_detected` are automatically added to `.claude/.gitignore` — they are transient and should not be committed.
+
+**Configuration:**
+
+```yaml
+# .claude/claude-craft/config.yml  (project-level recommended)
+verify:
+  commands:
+    - npm test
+    - npm run lint
+  timeout: 60   # seconds per command, default 120
+```
+
+Verification is skipped when no commands are configured and `verify.enabled` is not explicitly set to `true`.
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines and [CONTRIBUTORS.md](CONTRIBUTORS.md) for the list of contributors.

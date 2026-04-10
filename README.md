@@ -36,31 +36,34 @@ After editing commands or scripts, reload without restarting:
 
 ## MCP Servers
 
-The plugin bundles three MCP servers that are enabled by default (except `sequential-thinking`):
+The plugin bundles three MCP servers. All are **disabled by default** — enable only the ones you need to avoid unnecessary token consumption.
 
-| MCP | Default | Description |
-|-----|---------|-------------|
-| `context7` | enabled | Library documentation lookup |
-| `sequential-thinking` | disabled | Structured reasoning |
-| `github` | enabled | Repository and PR operations — requires `GITHUB_PERSONAL_ACCESS_TOKEN` |
+| MCP | Description | Requirement |
+|-----|-------------|-------------|
+| `context7` | Up-to-date library and framework documentation lookup | — |
+| `sequential-thinking` | Structured step-by-step reasoning | — |
+| `github` | Repository, PR, and issue operations | `GITHUB_PERSONAL_ACCESS_TOKEN` env var |
 
-Toggle them via config:
+Enable them via config:
 
 ```yaml
-# ~/.claude-craft/config.yml  or  .claude/claude-craft/config.yml
+# ~/.claude-craft/config.yml       ← applies to all your projects
+# .claude/claude-craft/config.yml  ← applies to the current project only
 mcp:
   context7:
     enabled: true
   sequential-thinking:
-    enabled: false
+    enabled: true
   github:
-    enabled: true   # export GITHUB_PERSONAL_ACCESS_TOKEN=<token>
+    enabled: true   # also requires: export GITHUB_PERSONAL_ACCESS_TOKEN=<token>
 ```
 
-Or with the `/ccraft:config` command:
+Or interactively with the `/ccraft:config` command:
 
-```bash
-/ccraft:config set user mcp context7.enabled false
+```
+/ccraft:config set user mcp context7.enabled true
+/ccraft:config set user mcp github.enabled true
+/ccraft:config set user mcp sequential-thinking.enabled true
 ```
 
 Changes take effect on the next session start.
@@ -109,9 +112,9 @@ Runs shell commands automatically whenever Claude modifies files. Useful for kee
 
 1. After every file edit (Edit, Write, Bash), a `changes_pending` flag is written to `.claude/`.
 2. When Claude finishes responding (Stop), if the flag is present and git shows actual changes, the configured commands run.
-3. Results are written to `.claude/changes_detected`. If any command fails, the output is surfaced to Claude before it can reply, so it can fix the issue.
+3. If any command fails, the relevant error output is surfaced to Claude before it can reply, so it can fix the issue.
 
-Both `.claude/changes_pending` and `.claude/changes_detected` are automatically added to `.claude/.gitignore` — they are transient and should not be committed.
+`.claude/changes_pending` is automatically added to `.claude/.gitignore` — it is transient and should not be committed.
 
 **Configuration:**
 

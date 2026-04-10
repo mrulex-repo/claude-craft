@@ -22,7 +22,7 @@ const SCHEMA = {
     'context7.enabled': {
       type: 'boolean',
       required: false,
-      default: true,
+      default: false,
       description: 'Enable the context7 MCP server (library documentation lookup)',
     },
     'sequential-thinking.enabled': {
@@ -34,7 +34,7 @@ const SCHEMA = {
     'github.enabled': {
       type: 'boolean',
       required: false,
-      default: true,
+      default: false,
       description: 'Enable the GitHub MCP server — requires GITHUB_PERSONAL_ACCESS_TOKEN env var',
     },
   },

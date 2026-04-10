@@ -9,12 +9,12 @@
  *   args      - arguments forwarded to the real command
  *
  * Config (mcp.<name>.enabled):
- *   true  → spawn the real MCP and proxy stdio (default for context7, github)
- *   false → run a stub that responds with empty capabilities
+ *   true  → spawn the real MCP and proxy stdio
+ *   false → run a stub that responds with empty capabilities (default for all servers)
  *
  * js-yaml is loaded from ~/.claude-craft/node_modules/ (deployed by setup.js).
  * On the very first session before setup has run, yaml loading is skipped and
- * the MCP defaults to enabled.
+ * the MCP defaults to disabled.
  */
 'use strict';
 
@@ -65,8 +65,8 @@ function findProjectRoot() {
 }
 
 function isEnabled() {
-  // yaml unavailable means setup hasn't run yet — default to enabled
-  if (!yaml) return true;
+  // yaml unavailable means setup hasn't run yet — default to disabled
+  if (!yaml) return false;
 
   const userConfig = loadYaml(path.join(HOME_CRAFT, 'config.yml'));
   const projectConfig = loadYaml(
@@ -78,7 +78,7 @@ function isEnabled() {
 
   // Project overrides user; both fall back to schema default
   const merged = Object.assign({}, userVal || {}, projectVal || {});
-  return merged.enabled !== false; // default true
+  return merged.enabled === true; // default false
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────

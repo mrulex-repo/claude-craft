@@ -3,8 +3,8 @@
  * Stop hook: run verification commands if changes were detected.
  *
  * Reads .claude/changes_pending. If present and git confirms actual changes
- * exist, runs verify.commands from config, writes .claude/changes_detected
- * with results, and clears the pending flag.
+ * exist, runs verify.commands from config and clears the pending flag.
+ * Failures are reported via stderr (exit 2) so Claude can act on them.
  */
 const fs = require('fs');
 const path = require('path');
@@ -96,7 +96,6 @@ process.stdin.on('end', () => {
     cwd = data.cwd || cwd;
     const projectRoot = findProjectRoot(cwd);
     const pendingPath = path.join(projectRoot, '.claude', 'changes_pending');
-    const detectedPath = path.join(projectRoot, '.claude', 'changes_detected');
 
     if (!fs.existsSync(pendingPath)) return;
 
@@ -127,21 +126,6 @@ process.stdin.on('end', () => {
     });
 
     const allPassed = results.length === 0 || results.every(r => r.passed);
-
-    fs.writeFileSync(
-      detectedPath,
-      JSON.stringify(
-        {
-          timestamp: new Date().toISOString(),
-          verified: commands.length > 0,
-          allPassed,
-          commands: results,
-        },
-        null,
-        2
-      ) + '\n',
-      'utf8'
-    );
 
     if (!allPassed) {
       const ERROR_RE = /\b(error|exception|fail(ed|ure)?|traceback|fatal|panic|cannot|undefined is not|null pointer|segfault|aborted?)\b/i;

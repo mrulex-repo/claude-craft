@@ -20,12 +20,12 @@ description: View and set Claude Craft configuration values
 | Command | Key | Default | Description |
 |---------|-----|---------|-------------|
 | `commit-msg` | `auto-approval` | `false` | When `false`, Claude presents the commit message and waits for your approval before committing. Set to `true` to skip the gate and commit immediately. |
-| `mcp` | `context7.enabled` | `true` | Enable the context7 MCP server (library documentation lookup) |
-| `mcp` | `sequential-thinking.enabled` | `false` | Enable the sequential-thinking MCP server (structured reasoning) |
-| `mcp` | `github.enabled` | `true` | Enable the GitHub MCP server — requires `GITHUB_PERSONAL_ACCESS_TOKEN` env var |
+| `mcp` | `context7.enabled` | `false` | Enable the context7 MCP server (up-to-date library and framework documentation lookup) |
+| `mcp` | `sequential-thinking.enabled` | `false` | Enable the sequential-thinking MCP server (structured step-by-step reasoning) |
+| `mcp` | `github.enabled` | `false` | Enable the GitHub MCP server (repository, PR, and issue operations) — requires `GITHUB_PERSONAL_ACCESS_TOKEN` env var |
 | `verify` | `enabled` | `false` | Explicitly enable verification even without commands |
 | `verify` | `commands` | `[]` | Shell commands to run after changes are detected (e.g. `npm test`) |
-| `verify` | `timeout` | `120` | Timeout in seconds for each verification command |
+| `verify` | `timeout` | `PT2M` | Timeout per verification command as ISO 8601 duration (e.g. `PT2M`, `PT5M30S`) |
 
 ## Instructions
 

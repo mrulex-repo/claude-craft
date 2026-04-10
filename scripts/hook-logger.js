@@ -2,9 +2,9 @@
 /**
  * Shared error logger for hook scripts.
  *
- * Writes to stderr (immediate visibility) and .claude/hooks_error.log
- * (persistent, capped at 50 entries). Double-wrapped so a logging
- * failure can never crash the calling hook.
+ * Writes full details to .claude/hooks_error.log (persistent, capped at 50 entries)
+ * and a short one-line notice to stderr so Claude can inform the user.
+ * Double-wrapped so a logging failure can never crash the calling hook.
  */
 const fs = require('fs');
 const path = require('path');
@@ -20,10 +20,6 @@ function logError(scriptName, err, cwd) {
     const entry = `[${timestamp}] [${scriptName}] ${message}\n${stack ? stack + '\n' : ''}`;
 
     try {
-      process.stderr.write(entry + DELIMITER);
-    } catch { /* ok */ }
-
-    try {
       const dir = path.join(cwd || process.cwd(), '.claude');
       const logPath = path.join(dir, 'hooks_error.log');
 
@@ -37,6 +33,8 @@ function logError(scriptName, err, cwd) {
 
       const trimmed = entries.slice(-MAX_ENTRIES).join(DELIMITER) + DELIMITER;
       fs.writeFileSync(logPath, trimmed, 'utf8');
+
+      process.stderr.write(`[claude-craft] Unexpected error in ${scriptName} hook. Details logged to: ${logPath}\n`);
     } catch { /* ok — never let logging crash the hook */ }
   } catch { /* ok */ }
 }

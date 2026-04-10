@@ -56,7 +56,7 @@ function isVerifyEnabled(cwd) {
   return Array.isArray(commands) && commands.length > 0;
 }
 
-const GITIGNORE_ENTRIES = ['changes_pending', 'changes_detected'];
+const GITIGNORE_ENTRIES = ['changes_pending'];
 
 function ensureGitignoreEntries(claudeDir) {
   const gitignorePath = path.join(claudeDir, '.gitignore');

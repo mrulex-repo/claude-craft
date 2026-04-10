@@ -41,6 +41,27 @@ function findProjectRoot(cwd) {
   }
 }
 
+/**
+ * Parse an ISO 8601 duration string into milliseconds.
+ * Supports P[n]Y[n]M[n]DT[n]H[n]M[n]S. Returns null if invalid.
+ */
+function parseIso8601Duration(str) {
+  if (typeof str !== 'string') return null;
+  const match = str.match(
+    /^P(?:(\d+(?:\.\d+)?)Y)?(?:(\d+(?:\.\d+)?)M)?(?:(\d+(?:\.\d+)?)D)?(?:T(?:(\d+(?:\.\d+)?)H)?(?:(\d+(?:\.\d+)?)M)?(?:(\d+(?:\.\d+)?)S)?)?$/
+  );
+  if (!match || str === 'P') return null;
+  const [, years = 0, months = 0, days = 0, hours = 0, minutes = 0, seconds = 0] = match.map(v => Number(v) || 0);
+  return Math.round(
+    (years * 365.25 * 24 * 3600 +
+      months * 30.44 * 24 * 3600 +
+      days * 24 * 3600 +
+      hours * 3600 +
+      minutes * 60 +
+      seconds) * 1000
+  );
+}
+
 function getVerifyConfig(cwd) {
   const userConfig = loadYaml(path.join(os.homedir(), '.claude-craft', 'config.yml'));
   const projectConfig = loadYaml(
@@ -87,13 +108,14 @@ process.stdin.on('end', () => {
 
     const config = getVerifyConfig(cwd);
     const commands = Array.isArray(config.commands) ? config.commands : [];
+    const timeoutMs = parseIso8601Duration(config.timeout) ?? 120000;
 
     const results = commands.map(cmd => {
       const result = spawnSync(cmd, {
         shell: true,
         cwd,
         encoding: 'utf8',
-        timeout: 120000,
+        timeout: timeoutMs,
       });
       return {
         command: cmd,

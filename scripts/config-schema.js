@@ -60,10 +60,11 @@ const SCHEMA = {
       description: 'Shell commands to run after changes are detected',
     },
     'timeout': {
-      type: 'number',
+      type: 'string',
+      format: 'duration',
       required: false,
-      default: 120,
-      description: 'Timeout in seconds for each verification command',
+      default: 'PT2M',
+      description: 'Timeout for each verification command as an ISO 8601 duration (e.g. PT2M, PT5M30S)',
     },
   },
 };

@@ -20,7 +20,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { execSync } = require('child_process');
-const { SCHEMA, isKnownCommand, isKnownKey, knownCommands, knownKeys, getNestedValue, flattenKeys } = require('./config-schema');
+const { SCHEMA, isKnownCommand, isKnownKey, knownCommands, knownKeys, getNestedValue, flattenKeys, getKeySchema } = require('./config-schema');
 
 let yaml = null;
 try {
@@ -51,6 +51,8 @@ function findProjectRoot() {
   }
 }
 
+const ISO8601_DURATION_RE = /^P(?:(\d+(?:\.\d+)?)Y)?(?:(\d+(?:\.\d+)?)M)?(?:(\d+(?:\.\d+)?)D)?(?:T(?:(\d+(?:\.\d+)?)H)?(?:(\d+(?:\.\d+)?)M)?(?:(\d+(?:\.\d+)?)S)?)?$/;
+
 function validateFile(config, filePath) {
   const errors = [];
   const infos = [];
@@ -73,6 +75,18 @@ function validateFile(config, filePath) {
           `ERROR: Unknown key "${key}" for command "${command}" in ${filePath}.\n` +
           `       Supported keys: ${knownKeys(command).join(', ')}`
         );
+        continue;
+      }
+
+      const keySchema = getKeySchema(command, key);
+      if (keySchema && keySchema.format === 'duration') {
+        const value = getNestedValue(section, key);
+        if (value !== undefined && value !== null && (typeof value !== 'string' || !ISO8601_DURATION_RE.test(value) || value === 'P')) {
+          errors.push(
+            `ERROR: Invalid value for "${command}.${key}" in ${filePath}.\n` +
+            `       Expected an ISO 8601 duration (e.g. PT2M, PT5M30S), got: ${JSON.stringify(value)}`
+          );
+        }
       }
     }
   }

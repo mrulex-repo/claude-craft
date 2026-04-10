@@ -112,6 +112,21 @@ describe('verify-changes', () => {
     assert.equal(fs.existsSync(path.join(subDir, '.claude', 'changes_detected')), false);
   });
 
+  it('uses timeout from config and kills commands that exceed it', () => {
+    fs.writeFileSync(pendingPath(), '');
+    writeUntracked(repoDir, 'modified.txt');
+    // PT0.1S = 100ms timeout; sleep 5 will be killed
+    writeProjectConfig(repoDir, 'verify:\n  timeout: PT0.1S\n  commands:\n    - "sleep 5"\n');
+
+    run();
+
+    const result = JSON.parse(fs.readFileSync(detectedPath(), 'utf8'));
+    assert.equal(result.verified, true);
+    assert.equal(result.allPassed, false);
+    assert.equal(result.commands[0].command, 'sleep 5');
+    assert.equal(result.commands[0].passed, false);
+  });
+
   it('always cleans up changes_pending even when verification fails', () => {
     fs.writeFileSync(pendingPath(), '');
     writeUntracked(repoDir, 'modified.txt');

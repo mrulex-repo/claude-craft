@@ -58,8 +58,8 @@ describe('config validation', () => {
     assert.equal(exitCode, 0);
   });
 
-  it('set-config accepts verify.timeout', () => {
-    const { exitCode } = set('project', 'verify', 'timeout', '60');
+  it('set-config accepts verify.timeout as ISO 8601 duration', () => {
+    const { exitCode } = set('project', 'verify', 'timeout', 'PT5M30S');
     assert.equal(exitCode, 0);
   });
 
@@ -125,6 +125,28 @@ describe('config validation', () => {
     const { exitCode, stdout } = validate();
     assert.equal(exitCode, 1);
     assert.match(stdout, /Unknown command "bad-command"/);
+  });
+
+  it('validate-config accepts a valid ISO 8601 duration for verify.timeout', () => {
+    writeProjectConfig(repoDir, 'verify:\n  timeout: PT5M30S\n');
+    const { exitCode, stdout } = validate();
+    assert.equal(exitCode, 0);
+    assert.match(stdout, /valid/i);
+  });
+
+  it('validate-config errors on invalid duration for verify.timeout', () => {
+    writeProjectConfig(repoDir, 'verify:\n  timeout: 120\n');
+    const { exitCode, stdout } = validate();
+    assert.equal(exitCode, 1);
+    assert.match(stdout, /Invalid value for "verify\.timeout"/);
+    assert.match(stdout, /ISO 8601 duration/);
+  });
+
+  it('validate-config errors on malformed duration string for verify.timeout', () => {
+    writeProjectConfig(repoDir, 'verify:\n  timeout: "5minutes"\n');
+    const { exitCode, stdout } = validate();
+    assert.equal(exitCode, 1);
+    assert.match(stdout, /Invalid value for "verify\.timeout"/);
   });
 
   it('validate-config reports multiple errors', () => {

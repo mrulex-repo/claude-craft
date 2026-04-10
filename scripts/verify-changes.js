@@ -144,12 +144,35 @@ process.stdin.on('end', () => {
     );
 
     if (!allPassed) {
+      const ERROR_RE = /\b(error|exception|fail(ed|ure)?|traceback|fatal|panic|cannot|undefined is not|null pointer|segfault|aborted?)\b/i;
+      // From the last 100 lines of a stream, return from the first error-like line onward.
+      // Returns '' if the stream is empty or no error pattern is found.
+      const extractRelevant = (str) => {
+        if (!str.trim()) return '';
+        const ls = str.trimEnd().split('\n');
+        const tail = ls.slice(-100);
+        const idx = tail.findIndex(l => ERROR_RE.test(l));
+        if (idx === -1) return '';
+        const slice = tail.slice(idx);
+        const prefix = ls.length > 100 ? `[...truncated, showing from first error in last 100 lines]\n` : '';
+        return prefix + slice.join('\n');
+      };
       const lines = ['Verification failed. Fix the errors before finishing.\n'];
       for (const r of results) {
         if (!r.passed) {
           lines.push(`Command: ${r.command} (exit ${r.exitCode})`);
-          if (r.stdout.trim()) lines.push(r.stdout.trimEnd());
-          if (r.stderr.trim()) lines.push(r.stderr.trimEnd());
+          const outRelevant = extractRelevant(r.stdout);
+          const errRelevant = extractRelevant(r.stderr);
+          if (outRelevant) lines.push(outRelevant);
+          if (errRelevant) lines.push(errRelevant);
+          // Fallback: no error pattern matched — show last 100 lines of whichever has content
+          if (!outRelevant && !errRelevant) {
+            const fallback = r.stderr.trim() ? r.stderr : r.stdout;
+            if (fallback.trim()) {
+              const ls = fallback.trimEnd().split('\n');
+              lines.push(ls.length > 100 ? `[...truncated, showing last 100 lines]\n` + ls.slice(-100).join('\n') : fallback.trimEnd());
+            }
+          }
           lines.push('');
         }
       }

@@ -112,7 +112,7 @@ describe('verify-changes', () => {
     assert.equal(fs.existsSync(path.join(subDir, '.claude', 'changes_detected')), false);
   });
 
-  it('uses timeout from config and kills commands that exceed it', () => {
+  it('uses timeout from config and kills commands that exceed it (ISO 8601)', () => {
     fs.writeFileSync(pendingPath(), '');
     writeUntracked(repoDir, 'modified.txt');
     // PT0.1S = 100ms timeout; sleep 5 will be killed
@@ -124,6 +124,21 @@ describe('verify-changes', () => {
     assert.equal(result.verified, true);
     assert.equal(result.allPassed, false);
     assert.equal(result.commands[0].command, 'sleep 5');
+    assert.equal(result.commands[0].passed, false);
+  });
+
+  it('uses timeout from config and kills commands that exceed it (plain number seconds)', () => {
+    fs.writeFileSync(pendingPath(), '');
+    writeUntracked(repoDir, 'modified.txt');
+    // timeout: 0.1 = 100ms; sleep 5 will be killed
+    // (set-config.js coerces numeric strings to numbers before YAML storage)
+    writeProjectConfig(repoDir, 'verify:\n  timeout: 0.1\n  commands:\n    - "sleep 5"\n');
+
+    run();
+
+    const result = JSON.parse(fs.readFileSync(detectedPath(), 'utf8'));
+    assert.equal(result.verified, true);
+    assert.equal(result.allPassed, false);
     assert.equal(result.commands[0].passed, false);
   });
 

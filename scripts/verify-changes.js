@@ -42,15 +42,31 @@ function findProjectRoot(cwd) {
 }
 
 /**
- * Parse an ISO 8601 duration string into milliseconds.
- * Supports P[n]Y[n]M[n]DT[n]H[n]M[n]S. Returns null if invalid.
+ * Parse a timeout value into milliseconds.
+ *
+ * Accepts:
+ *   - ISO 8601 duration string: "PT5M", "PT2M30S", "P1DT2H" …
+ *   - Plain number (seconds): 360  (set-config.js coerces numeric strings to numbers)
+ *   - Numeric string (seconds): "360"
+ *
+ * Returns null if the value cannot be interpreted.
  */
-function parseIso8601Duration(str) {
-  if (typeof str !== 'string') return null;
-  const match = str.match(
+function parseIso8601Duration(value) {
+  // Plain number — treat as seconds (set-config coerces "360" → 360 before YAML storage)
+  if (typeof value === 'number') {
+    return Number.isFinite(value) && value > 0 ? Math.round(value * 1000) : null;
+  }
+  if (typeof value !== 'string') return null;
+  // Numeric string — treat as seconds
+  if (/^\d+(?:\.\d+)?$/.test(value)) {
+    const s = Number(value);
+    return s > 0 ? Math.round(s * 1000) : null;
+  }
+  // ISO 8601 duration
+  const match = value.match(
     /^P(?:(\d+(?:\.\d+)?)Y)?(?:(\d+(?:\.\d+)?)M)?(?:(\d+(?:\.\d+)?)D)?(?:T(?:(\d+(?:\.\d+)?)H)?(?:(\d+(?:\.\d+)?)M)?(?:(\d+(?:\.\d+)?)S)?)?$/
   );
-  if (!match || str === 'P') return null;
+  if (!match || value === 'P') return null;
   const [, years = 0, months = 0, days = 0, hours = 0, minutes = 0, seconds = 0] = match.map(v => Number(v) || 0);
   return Math.round(
     (years * 365.25 * 24 * 3600 +

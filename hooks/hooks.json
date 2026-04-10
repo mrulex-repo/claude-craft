@@ -23,6 +23,15 @@
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/read-guard.js\""
           }
         ]
+      },
+      {
+        "matcher": "Bash|Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/config-guard.js\""
+          }
+        ]
       }
     ],
     "PostToolUse": [

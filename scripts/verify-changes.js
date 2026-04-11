@@ -2,8 +2,11 @@
 /**
  * Stop hook: run verification commands if changes were detected.
  *
- * Reads .claude/changes_pending. If present and git confirms actual changes
- * exist, runs verify.commands from config and clears the pending flag.
+ * Runs verify.commands if .claude/changes_pending exists OR git reports changes.
+ * This covers manual edits outside Claude, failed commit-guard bypasses, and
+ * manual commits where changes_pending was never cleared.
+ * Clears changes_pending only on success; keeps it on failure so the Stop hook
+ * keeps firing until all checks pass.
  * Failures are reported via stderr (exit 2) so Claude can act on them.
  */
 const fs = require('fs');
@@ -78,17 +81,6 @@ function parseIso8601Duration(value) {
   );
 }
 
-function getVerifyConfig(cwd) {
-  const userConfig = loadYaml(path.join(os.homedir(), '.claude-craft', 'config.yml'));
-  const projectConfig = loadYaml(
-    path.join(findProjectRoot(cwd), '.claude', 'claude-craft', 'config.yml')
-  );
-
-  const userSection = (userConfig && userConfig['verify']) || {};
-  const projectSection = (projectConfig && projectConfig['verify']) || {};
-  return { ...userSection, ...projectSection };
-}
-
 function hasGitChanges(cwd) {
   try {
     const out = execSync('git status --porcelain', {
@@ -102,6 +94,17 @@ function hasGitChanges(cwd) {
   }
 }
 
+function getVerifyConfig(cwd) {
+  const userConfig = loadYaml(path.join(os.homedir(), '.claude-craft', 'config.yml'));
+  const projectConfig = loadYaml(
+    path.join(findProjectRoot(cwd), '.claude', 'claude-craft', 'config.yml')
+  );
+
+  const userSection = (userConfig && userConfig['verify']) || {};
+  const projectSection = (projectConfig && projectConfig['verify']) || {};
+  return { ...userSection, ...projectSection };
+}
+
 let input = '';
 let cwd = process.cwd();
 process.stdin.setEncoding('utf8');
@@ -113,13 +116,8 @@ process.stdin.on('end', () => {
     const projectRoot = findProjectRoot(cwd);
     const pendingPath = path.join(projectRoot, '.claude', 'changes_pending');
 
-    if (!fs.existsSync(pendingPath)) return;
-
-    // Always clean up the pending flag
-    try { fs.unlinkSync(pendingPath); } catch { /* ok */ }
-
-    // Only proceed if git confirms actual file changes exist
-    if (!hasGitChanges(cwd)) return;
+    const hasPending = fs.existsSync(pendingPath);
+    if (!hasPending && !hasGitChanges(cwd)) return;
 
     const config = getVerifyConfig(cwd);
     const commands = Array.isArray(config.commands) ? config.commands : [];
@@ -143,42 +141,45 @@ process.stdin.on('end', () => {
 
     const allPassed = results.length === 0 || results.every(r => r.passed);
 
-    if (!allPassed) {
-      const ERROR_RE = /\b(error|exception|fail(ed|ure)?|traceback|fatal|panic|cannot|undefined is not|null pointer|segfault|aborted?)\b/i;
-      // From the last 100 lines of a stream, return from the first error-like line onward.
-      // Returns '' if the stream is empty or no error pattern is found.
-      const extractRelevant = (str) => {
-        if (!str.trim()) return '';
-        const ls = str.trimEnd().split('\n');
-        const tail = ls.slice(-100);
-        const idx = tail.findIndex(l => ERROR_RE.test(l));
-        if (idx === -1) return '';
-        const slice = tail.slice(idx);
-        const prefix = ls.length > 100 ? `[...truncated, showing from first error in last 100 lines]\n` : '';
-        return prefix + slice.join('\n');
-      };
-      const lines = ['Verification failed. Fix the errors before finishing.\n'];
-      for (const r of results) {
-        if (!r.passed) {
-          lines.push(`Command: ${r.command} (exit ${r.exitCode})`);
-          const outRelevant = extractRelevant(r.stdout);
-          const errRelevant = extractRelevant(r.stderr);
-          if (outRelevant) lines.push(outRelevant);
-          if (errRelevant) lines.push(errRelevant);
-          // Fallback: no error pattern matched — show last 100 lines of whichever has content
-          if (!outRelevant && !errRelevant) {
-            const fallback = r.stderr.trim() ? r.stderr : r.stdout;
-            if (fallback.trim()) {
-              const ls = fallback.trimEnd().split('\n');
-              lines.push(ls.length > 100 ? `[...truncated, showing last 100 lines]\n` + ls.slice(-100).join('\n') : fallback.trimEnd());
-            }
-          }
-          lines.push('');
-        }
-      }
-      process.stderr.write(lines.join('\n'));
-      process.exit(2);
+    if (allPassed) {
+      if (hasPending) try { fs.unlinkSync(pendingPath); } catch { /* ok */ }
+      return;
     }
+
+    const ERROR_RE = /\b(error|exception|fail(ed|ure)?|traceback|fatal|panic|cannot|undefined is not|null pointer|segfault|aborted?)\b/i;
+    // From the last 100 lines of a stream, return from the first error-like line onward.
+    // Returns '' if the stream is empty or no error pattern is found.
+    const extractRelevant = (str) => {
+      if (!str.trim()) return '';
+      const ls = str.trimEnd().split('\n');
+      const tail = ls.slice(-100);
+      const idx = tail.findIndex(l => ERROR_RE.test(l));
+      if (idx === -1) return '';
+      const slice = tail.slice(idx);
+      const prefix = ls.length > 100 ? `[...truncated, showing from first error in last 100 lines]\n` : '';
+      return prefix + slice.join('\n');
+    };
+    const lines = ['Verification failed. Fix the errors before finishing.\n'];
+    for (const r of results) {
+      if (!r.passed) {
+        lines.push(`Command: ${r.command} (exit ${r.exitCode})`);
+        const outRelevant = extractRelevant(r.stdout);
+        const errRelevant = extractRelevant(r.stderr);
+        if (outRelevant) lines.push(outRelevant);
+        if (errRelevant) lines.push(errRelevant);
+        // Fallback: no error pattern matched — show last 100 lines of whichever has content
+        if (!outRelevant && !errRelevant) {
+          const fallback = r.stderr.trim() ? r.stderr : r.stdout;
+          if (fallback.trim()) {
+            const ls = fallback.trimEnd().split('\n');
+            lines.push(ls.length > 100 ? `[...truncated, showing last 100 lines]\n` + ls.slice(-100).join('\n') : fallback.trimEnd());
+          }
+        }
+        lines.push('');
+      }
+    }
+    process.stderr.write(lines.join('\n'));
+    process.exit(2);
   } catch (err) {
     logError('verify-changes', err, cwd);
   }

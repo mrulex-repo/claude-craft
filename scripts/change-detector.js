@@ -85,7 +85,7 @@ function getGitState(cwd) {
   return { head, status };
 }
 
-const GITIGNORE_ENTRIES = ['changes_pending', 'pre_tool_state'];
+const GITIGNORE_ENTRIES = ['changes_pending', 'pre_tool_state', 'last_verified_state'];
 
 function ensureGitignoreEntries(claudeDir) {
   const gitignorePath = path.join(claudeDir, '.gitignore');

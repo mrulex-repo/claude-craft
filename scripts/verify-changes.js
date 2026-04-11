@@ -81,17 +81,41 @@ function parseIso8601Duration(value) {
   );
 }
 
-function hasGitChanges(cwd) {
+function getGitState(cwd) {
+  let head = '';
+  let status = '';
   try {
-    const out = execSync('git status --porcelain', {
+    head = execSync('git rev-parse HEAD', {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
       cwd,
-    });
-    return out.trim().length > 0;
+    }).trim();
+  } catch { /* no commits or not a git repo */ }
+  try {
+    status = execSync('git status --porcelain', {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+      cwd,
+    }).trim();
+  } catch { /* not a git repo */ }
+  return { head, status };
+}
+
+const LAST_VERIFIED_STATE = 'last_verified_state';
+
+function loadLastVerifiedState(claudeDir) {
+  try {
+    const p = path.join(claudeDir, LAST_VERIFIED_STATE);
+    return JSON.parse(fs.readFileSync(p, 'utf8'));
   } catch {
-    return false;
+    return null;
   }
+}
+
+function saveLastVerifiedState(claudeDir, state) {
+  try {
+    fs.writeFileSync(path.join(claudeDir, LAST_VERIFIED_STATE), JSON.stringify(state), 'utf8');
+  } catch { /* ok */ }
 }
 
 function getVerifyConfig(cwd) {
@@ -116,8 +140,15 @@ process.stdin.on('end', () => {
     const projectRoot = findProjectRoot(cwd);
     const pendingPath = path.join(projectRoot, '.claude', 'changes_pending');
 
+    const claudeDir = path.join(projectRoot, '.claude');
     const hasPending = fs.existsSync(pendingPath);
-    if (!hasPending && !hasGitChanges(cwd)) return;
+    const currentState = getGitState(cwd);
+    const lastVerified = loadLastVerifiedState(claudeDir);
+    const stateChanged = !lastVerified
+      || currentState.head !== lastVerified.head
+      || currentState.status !== lastVerified.status;
+
+    if (!hasPending && !stateChanged) return;
 
     const config = getVerifyConfig(cwd);
     const commands = Array.isArray(config.commands) ? config.commands : [];
@@ -143,6 +174,7 @@ process.stdin.on('end', () => {
 
     if (allPassed) {
       if (hasPending) try { fs.unlinkSync(pendingPath); } catch { /* ok */ }
+      saveLastVerifiedState(claudeDir, currentState);
       return;
     }
 

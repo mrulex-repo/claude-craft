@@ -32,6 +32,15 @@
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/config-guard.js\""
           }
         ]
+      },
+      {
+        "matcher": "Edit|Write|NotebookEdit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/pre-tool-state.js\""
+          }
+        ]
       }
     ],
     "PostToolUse": [

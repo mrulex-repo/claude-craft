@@ -1,5 +1,5 @@
 ---
-allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git branch:*), Bash(git commit:*), Bash(node ~/.claude-craft/approve-commit.js --from-workflow:*)
+allowed-tools: Bash(git status:*), Bash(git --no-pager diff:*), Bash(git branch:*), Bash(git commit:*), Bash(node ~/.claude-craft/approve-commit.js --from-workflow:*)
 description: Generate JIRA commit message and auto-stage all files
 ---
 
@@ -14,6 +14,7 @@ description: Generate JIRA commit message and auto-stage all files
 ## Instructions
 1. **Analyze Workspace:**
    - Look at all modified and untracked files.
+   - When reading diffs, always use `git --no-pager diff` to avoid output mangling by configured pagers (e.g. delta, diff-so-fancy).
    - Use **Branch Parsed** for type and JIRA-ID — do not re-parse the branch yourself.
    - **Casing:** `type` (lower), `JIRA-ID` (UPPER).
 

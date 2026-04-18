@@ -154,6 +154,8 @@ process.stdin.on('end', () => {
     const pendingPath = path.join(projectRoot, '.claude', 'changes_pending');
 
     const claudeDir = path.join(projectRoot, '.claude');
+    fs.mkdirSync(claudeDir, { recursive: true });
+    ensureGitignoreEntries(claudeDir);
     const hasPending = fs.existsSync(pendingPath);
     const currentState = getGitState(cwd);
     const lastVerified = loadLastVerifiedState(claudeDir);
@@ -187,7 +189,6 @@ process.stdin.on('end', () => {
 
     if (allPassed) {
       if (hasPending) try { fs.unlinkSync(pendingPath); } catch { /* ok */ }
-      ensureGitignoreEntries(claudeDir);
       saveLastVerifiedState(claudeDir, currentState);
       return;
     }

@@ -103,6 +103,19 @@ function getGitState(cwd) {
 
 const LAST_VERIFIED_STATE = 'last_verified_state';
 
+const GITIGNORE_ENTRIES = ['changes_pending', 'pre_tool_state', 'last_verified_state'];
+
+function ensureGitignoreEntries(claudeDir) {
+  const gitignorePath = path.join(claudeDir, '.gitignore');
+  let existing = '';
+  try { existing = fs.readFileSync(gitignorePath, 'utf8'); } catch { /* new file */ }
+  const lines = existing ? existing.split('\n') : [];
+  const missing = GITIGNORE_ENTRIES.filter(e => !lines.includes(e));
+  if (missing.length === 0) return;
+  const updated = existing + (existing && !existing.endsWith('\n') ? '\n' : '') + missing.join('\n') + '\n';
+  fs.writeFileSync(gitignorePath, updated, 'utf8');
+}
+
 function loadLastVerifiedState(claudeDir) {
   try {
     const p = path.join(claudeDir, LAST_VERIFIED_STATE);
@@ -174,6 +187,7 @@ process.stdin.on('end', () => {
 
     if (allPassed) {
       if (hasPending) try { fs.unlinkSync(pendingPath); } catch { /* ok */ }
+      ensureGitignoreEntries(claudeDir);
       saveLastVerifiedState(claudeDir, currentState);
       return;
     }

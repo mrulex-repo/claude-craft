@@ -37,7 +37,12 @@ Any file the plugin creates as part of its own procedures (state files, temp fil
 - An entry in the relevant `.gitignore` (e.g. `.claude/.gitignore` for files inside `.claude/`)
 - Deleted immediately after use
 
-If a script creates a new runtime file, add its name to `GITIGNORE_ENTRIES` in `scripts/change-detector.js` **and** verify that `ensureGitignoreEntries` runs before the file can be created. Never leave plugin-internal files exposed to the user's `git status`.
+Each script that writes a runtime file is responsible for calling `ensureGitignoreEntries(claudeDir)` immediately before the write — do not rely on another script to do it later. When adding a new runtime file:
+
+1. Add its name to `GITIGNORE_ENTRIES` in every script that writes it (the constant is duplicated by design — each script is self-contained).
+2. Call `ensureGitignoreEntries(claudeDir)` right before the `fs.writeFileSync` that creates the file.
+
+Never leave plugin-internal files exposed to the user's `git status`.
 
 ### External Dependencies
 

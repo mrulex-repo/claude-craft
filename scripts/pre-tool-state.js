@@ -41,6 +41,19 @@ function findProjectRoot(cwd) {
   }
 }
 
+const GITIGNORE_ENTRIES = ['changes_pending', 'pre_tool_state', 'last_verified_state'];
+
+function ensureGitignoreEntries(claudeDir) {
+  const gitignorePath = path.join(claudeDir, '.gitignore');
+  let existing = '';
+  try { existing = fs.readFileSync(gitignorePath, 'utf8'); } catch { /* new file */ }
+  const lines = existing ? existing.split('\n') : [];
+  const missing = GITIGNORE_ENTRIES.filter(e => !lines.includes(e));
+  if (missing.length === 0) return;
+  const updated = existing + (existing && !existing.endsWith('\n') ? '\n' : '') + missing.join('\n') + '\n';
+  fs.writeFileSync(gitignorePath, updated, 'utf8');
+}
+
 function isVerifyEnabled(cwd) {
   const userConfig = loadYaml(path.join(os.homedir(), '.claude-craft', 'config.yml'));
   const projectConfig = loadYaml(
@@ -93,6 +106,7 @@ process.stdin.on('end', () => {
 
     const claudeDir = path.join(findProjectRoot(cwd), '.claude');
     fs.mkdirSync(claudeDir, { recursive: true });
+    ensureGitignoreEntries(claudeDir);
 
     const state = getGitState(cwd);
     fs.writeFileSync(path.join(claudeDir, 'pre_tool_state'), JSON.stringify(state), 'utf8');

@@ -2,3 +2,5 @@ commit_approved
 changes_pending
 changes_detected
 hooks_error.log
+last_verified_state
+pre_tool_state

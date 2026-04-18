@@ -30,6 +30,15 @@ Use them in commands via `!` bash directives:
 - **Branch Parsed:** !`node ~/.claude-craft/parse-branch.js "$(git branch --show-current)" 2>/dev/null || echo ""`
 ```
 
+### File Hygiene
+
+Any file the plugin creates as part of its own procedures (state files, temp files, locks, logs) must not appear as untracked or modified files in the user's project. Every such file must be covered by one of:
+
+- An entry in the relevant `.gitignore` (e.g. `.claude/.gitignore` for files inside `.claude/`)
+- Deleted immediately after use
+
+If a script creates a new runtime file, add its name to `GITIGNORE_ENTRIES` in `scripts/change-detector.js` **and** verify that `ensureGitignoreEntries` runs before the file can be created. Never leave plugin-internal files exposed to the user's `git status`.
+
 ### External Dependencies
 
 If a command requires an external CLI tool (anything other than `git`):

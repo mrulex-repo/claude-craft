@@ -27,6 +27,44 @@ function getMarkerPath(cwd) {
   return path.join(cwd || process.cwd(), '.claude', 'commit_approved');
 }
 
+function findProjectRoot(cwd) {
+  try {
+    return execSync('git rev-parse --show-toplevel', {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+      cwd: cwd || process.cwd(),
+    }).trim();
+  } catch {
+    return cwd || process.cwd();
+  }
+}
+
+function getGitState(cwd) {
+  let head = '';
+  let status = '';
+  try {
+    head = execSync('git rev-parse HEAD', {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+      cwd,
+    }).trim();
+  } catch { /* no commits or not a git repo */ }
+  try {
+    status = execSync('git status --porcelain', {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+      cwd,
+    }).trim();
+  } catch { /* not a git repo */ }
+  return { head, status };
+}
+
+function saveLastVerifiedState(claudeDir, state) {
+  try {
+    fs.writeFileSync(path.join(claudeDir, 'last_verified_state'), JSON.stringify(state), 'utf8');
+  } catch { /* ok */ }
+}
+
 function isGitCommit(command) {
   return /\bgit\s+commit\b/.test(command || '');
 }
@@ -79,6 +117,8 @@ process.stdin.on('end', () => {
       }
     } else if (hook_event_name === 'PostToolUse') {
       try { fs.unlinkSync(markerPath); } catch { /* ok if already gone */ }
+      const claudeDir = path.join(findProjectRoot(cwd), '.claude');
+      saveLastVerifiedState(claudeDir, getGitState(cwd));
     }
   } catch (err) {
     logError('commit-guard', err, cwd);

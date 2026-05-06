@@ -65,8 +65,44 @@ function saveLastVerifiedState(claudeDir, state) {
   } catch { /* ok */ }
 }
 
+// Git top-level flags that consume the next token as their value
+const GIT_FLAGS_WITH_ARG = new Set(['-C', '-c', '--git-dir', '--work-tree', '--namespace', '--super-prefix', '--config-env', '--exec-path']);
+
+function tokenize(str) {
+  const tokens = [];
+  let i = 0;
+  while (i < str.length) {
+    while (i < str.length && str[i] === ' ') i++;
+    if (i >= str.length) break;
+    let token = '';
+    while (i < str.length && str[i] !== ' ') {
+      const ch = str[i];
+      if (ch === '"' || ch === "'") {
+        const q = ch; i++;
+        while (i < str.length && str[i] !== q) token += str[i++];
+        if (i < str.length) i++;
+      } else {
+        token += str[i++];
+      }
+    }
+    if (token) tokens.push(token);
+  }
+  return tokens;
+}
+
 function isGitCommit(command) {
-  return /\bgit\s+commit\b/.test(command || '');
+  const tokens = tokenize(command || '');
+  const gitIdx = tokens.findIndex(t => t === 'git' || t.endsWith('/git'));
+  if (gitIdx === -1) return false;
+  let i = gitIdx + 1;
+  while (i < tokens.length) {
+    const t = tokens[i];
+    if (!t.startsWith('-')) return t === 'commit';
+    // Flags with = embed their value (--git-dir=/path), no extra token to skip
+    const flagName = t.includes('=') ? t.slice(0, t.indexOf('=')) : t;
+    i += GIT_FLAGS_WITH_ARG.has(flagName) && !t.includes('=') ? 2 : 1;
+  }
+  return false;
 }
 
 function isApproveCommit(command) {

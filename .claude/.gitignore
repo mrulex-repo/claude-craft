@@ -4,3 +4,5 @@ changes_detected
 hooks_error.log
 last_verified_state
 pre_tool_state
+notification_pending
+notify_id

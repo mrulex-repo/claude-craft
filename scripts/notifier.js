@@ -17,7 +17,7 @@ const path = require('path');
 
 const [,, agentName, lockFilePath] = process.argv;
 const title   = 'Claude Code';
-const message = `Agent "${agentName}" has finished.`;
+const message = `${agentName} has finished.`;
 
 function cleanup() {
   try { fs.unlinkSync(lockFilePath); } catch {}

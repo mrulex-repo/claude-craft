@@ -8,7 +8,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const { execSync, spawn } = require('child_process');
+const { execSync, spawnSync, spawn } = require('child_process');
 
 let yaml = null;
 try {
@@ -39,6 +39,27 @@ function findProjectRoot(cwd) {
   }
 }
 
+/**
+ * Best-effort focus detection. Returns true if the user is actively looking
+ * at this session, meaning a notification would be redundant.
+ *
+ * tmux: reliable — checks whether our pane and window are both active.
+ * Non-tmux: no cross-platform mechanism; always returns false (notify anyway).
+ */
+function isSessionFocused() {
+  const tmuxPane = process.env.TMUX_PANE;
+  if (!tmuxPane || !process.env.TMUX) return false;
+  try {
+    const out = spawnSync(
+      'tmux', ['display-message', '-t', tmuxPane, '-p', '#{pane_active}#{window_active}'],
+      { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }
+    );
+    return out.stdout && out.stdout.trim() === '11';
+  } catch {
+    return false;
+  }
+}
+
 function getNotifyConfig(cwd) {
   const userConfig = loadYaml(path.join(os.homedir(), '.claude-craft', 'config.yml'));
   const projectConfig = loadYaml(
@@ -62,6 +83,7 @@ process.stdin.on('end', () => {
     const config = getNotifyConfig(cwd);
 
     if (!config.enabled) return;
+    if (isSessionFocused()) return;
 
     const lockFile = path.join(projectRoot, '.claude', 'notification_pending');
     if (fs.existsSync(lockFile)) return;

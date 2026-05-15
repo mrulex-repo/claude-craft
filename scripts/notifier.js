@@ -1,17 +1,19 @@
 #!/usr/bin/env node
 /**
- * Background process: show a toast window, then remove the lock file.
+ * Background process: send an OS notification, then remove the lock file.
  * Spawned detached by notify.js so it outlives the stop hook.
  * argv[2] = agentName, argv[3] = lockFilePath
  *
- * Tries a Python tkinter window first (bottom-right, stays until dismissed).
- * Falls back to a platform dialog if Python or tkinter is unavailable.
+ * Linux:   notify-send with urgency=critical (persistent on most daemons).
+ *          Replaces the previous notification for this agent via --replace-id
+ *          so at most one notification per agent appears at a time.
+ * macOS:   osascript display notification (Notification Center, top-right).
+ * Windows: PowerShell NotifyIcon balloon tip (system tray, bottom-right).
  */
 'use strict';
 const { spawnSync } = require('child_process');
 const fs   = require('fs');
 const path = require('path');
-const os   = require('os');
 
 const [,, agentName, lockFilePath] = process.argv;
 const title   = 'Claude Code';
@@ -21,56 +23,56 @@ function cleanup() {
   try { fs.unlinkSync(lockFilePath); } catch {}
 }
 
-// ── Custom toast window via Python + tkinter ─────────────────────────────────
-
-const windowScript = path.join(os.homedir(), '.claude-craft', 'notifier-window.py');
-
-function tryPythonWindow() {
-  for (const py of ['python3', 'python']) {
-    const check = spawnSync(py, ['-c', 'import tkinter'], { stdio: 'ignore' });
-    if (check.error != null || check.status !== 0) continue;
-
-    const result = spawnSync(py, [windowScript, agentName, lockFilePath], { stdio: 'ignore' });
-    if (result.error != null) continue; // spawn failed, try next interpreter
-
-    if (result.status === 0) return true; // window shown and dismissed normally
-
-    // Window crashed (e.g. no display, Wayland-only session) — clean up the
-    // lock file and fall through to the platform dialog fallback.
-    cleanup();
-  }
-  return false;
-}
-
-if (tryPythonWindow()) process.exit(0);
-
-// ── Fallback: platform dialog ────────────────────────────────────────────────
-
 const { platform } = process;
 
-function dialog(cmd, args) {
-  const result = spawnSync(cmd, args, { stdio: 'ignore' });
-  return result.error == null;
-}
+if (platform === 'linux') {
+  // Persist the notification ID so subsequent stops replace the same slot.
+  const idFile = path.join(path.dirname(lockFilePath), 'notify_id');
+  const args = [
+    '--urgency=critical',
+    `--app-name=${title}`,
+    '--icon=dialog-information',
+  ];
 
-if (platform === 'darwin') {
-  const safe = message.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-  spawnSync('osascript', ['-e', `display dialog "${safe}" buttons {"OK"} with title "${title}"`], { stdio: 'ignore' });
-} else if (platform === 'linux') {
-  if (!dialog('zenity', ['--info', `--text=${message}`, `--title=${title}`])) {
-    if (!dialog('kdialog', ['--title', title, '--msgbox', message])) {
-      dialog('xmessage', ['-center', message]);
-    }
+  try {
+    const stored = fs.readFileSync(idFile, 'utf8').trim();
+    if (stored) args.push(`--replace-id=${stored}`);
+  } catch {}
+
+  // --print-id returns the notification ID (libnotify ≥ 0.7.9)
+  const result = spawnSync('notify-send', [...args, '--print-id', title, message], {
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'ignore'],
+  });
+
+  if (result.error || result.status !== 0) {
+    // --print-id not supported — retry without it
+    spawnSync('notify-send', [...args, title, message], { stdio: 'ignore' });
+  } else if (result.stdout && result.stdout.trim()) {
+    try { fs.writeFileSync(idFile, result.stdout.trim(), 'utf8'); } catch {}
   }
+
+} else if (platform === 'darwin') {
+  const safe = message.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  spawnSync('osascript', [
+    '-e', `display notification "${safe}" with title "${title}"`,
+  ], { stdio: 'ignore' });
+
 } else if (platform === 'win32') {
   const safeMsg   = message.replace(/'/g, "''");
   const safeTitle = title.replace(/'/g, "''");
-  spawnSync(
-    'powershell',
-    ['-WindowStyle', 'Hidden', '-Command',
-      `Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.MessageBox]::Show('${safeMsg}', '${safeTitle}')`],
-    { stdio: 'ignore' }
-  );
+  // NotifyIcon balloon tip appears from the system tray (bottom-right).
+  // The process must stay alive while the balloon is visible.
+  spawnSync('powershell', [
+    '-WindowStyle', 'Hidden', '-Command',
+    `Add-Type -AssemblyName System.Windows.Forms;
+     $n = New-Object System.Windows.Forms.NotifyIcon;
+     $n.Icon = [System.Drawing.SystemIcons]::Information;
+     $n.Visible = $true;
+     $n.ShowBalloonTip(10000, '${safeTitle}', '${safeMsg}', [System.Windows.Forms.ToolTipIcon]::Info);
+     Start-Sleep -Seconds 11;
+     $n.Dispose()`,
+  ], { stdio: 'ignore' });
 }
 
 cleanup();

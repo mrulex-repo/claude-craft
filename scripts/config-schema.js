@@ -46,6 +46,14 @@ const SCHEMA = {
       description: 'When false (default), Claude presents the commit message and waits for your approval before committing. Set to true to skip the approval gate and commit immediately.',
     },
   },
+  'notify': {
+    'enabled': {
+      type: 'boolean',
+      required: false,
+      default: false,
+      description: 'Show an OS notification when the agent finishes',
+    },
+  },
   'verify': {
     'enabled': {
       type: 'boolean',

@@ -21,7 +21,13 @@ def cleanup():
         except OSError:
             pass
 
-root = tk.Tk()
+try:
+    root = tk.Tk()
+except Exception:
+    # No display available (e.g. Wayland-only, headless) — let notifier.js
+    # fall through to the platform dialog fallback.
+    sys.exit(2)
+
 root.overrideredirect(True)   # borderless
 root.attributes('-topmost', True)
 

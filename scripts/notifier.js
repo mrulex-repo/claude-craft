@@ -33,10 +33,11 @@ function tryPythonWindow() {
     const result = spawnSync(py, [windowScript, agentName, lockFilePath], { stdio: 'ignore' });
     if (result.error != null) continue; // spawn failed, try next interpreter
 
-    // Window ran. If it crashed without removing the lock, clean up so
-    // future stops can fire.
-    if (result.status !== 0) cleanup();
-    return true;
+    if (result.status === 0) return true; // window shown and dismissed normally
+
+    // Window crashed (e.g. no display, Wayland-only session) — clean up the
+    // lock file and fall through to the platform dialog fallback.
+    cleanup();
   }
   return false;
 }

@@ -28,11 +28,14 @@ except Exception:
     # fall through to the platform dialog fallback.
     sys.exit(2)
 
-root.overrideredirect(True)   # borderless
+root.title('Claude Code')
+root.resizable(False, False)
 root.attributes('-topmost', True)
 
-# macOS: use the floating window layer so it appears above full-screen apps
+# Borderless on macOS only — on Linux, overrideredirect prevents the WM
+# from raising the window above others, so we keep the title bar there.
 if sys.platform == 'darwin':
+    root.overrideredirect(True)
     try:
         root.tk.call('::tk::unsupported::MacWindowStyle', 'style', root._w, 'help', 'none')
     except Exception:
@@ -115,5 +118,7 @@ menubar = 30   # rough menu bar / top panel height
 root.geometry(f'+{sw - ww - margin}+{menubar + margin}')
 
 root.deiconify()
+root.lift()
+root.focus_force()
 root.mainloop()
 cleanup()

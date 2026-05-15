@@ -59,9 +59,12 @@ function validateFile(config, filePath) {
 
   for (const command of Object.keys(config)) {
     if (!isKnownCommand(command)) {
+      const supported = knownCommands()
+        .map(cmd => `${cmd} (${knownKeys(cmd).join(', ')})`)
+        .join('\n         ');
       errors.push(
         `ERROR: Unknown command "${command}" in ${filePath}.\n` +
-        `       Supported commands: ${knownCommands().join(', ')}`
+        `       Supported commands and keys:\n         ${supported}`
       );
       continue;
     }

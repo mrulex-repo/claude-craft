@@ -171,7 +171,6 @@ process.stdin.on('end', () => {
     const currentState = getGitState(cwd);
     const lastVerified = loadLastVerifiedState(claudeDir);
     const stateChanged = !lastVerified
-      || currentState.head !== lastVerified.head
       || currentState.status !== lastVerified.status
       || currentState.diffHash !== lastVerified.diffHash;
 

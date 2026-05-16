@@ -68,11 +68,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/verify-changes.js\""
-          },
-          {
-            "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/notify.js\""
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/stop.js\""
           }
         ]
       }

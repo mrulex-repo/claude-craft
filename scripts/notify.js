@@ -330,6 +330,7 @@ process.stdin.on('end', () => {
     const config = getNotifyConfig(cwd);
 
     if (!config.enabled) return;
+    if (fs.existsSync(path.join(projectRoot, '.claude', 'verify_failed'))) return;
     if (isSessionFocused(cwd)) return;
 
     const lockFile = path.join(projectRoot, '.claude', 'notification_pending');

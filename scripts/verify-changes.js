@@ -114,7 +114,7 @@ function getGitState(cwd) {
 
 const LAST_VERIFIED_STATE = 'last_verified_state';
 
-const GITIGNORE_ENTRIES = ['changes_pending', 'pre_tool_state', 'last_verified_state', 'notification_pending', 'notify_id'];
+const GITIGNORE_ENTRIES = ['changes_pending', 'pre_tool_state', 'last_verified_state', 'notification_pending', 'notify_id', 'verify_failed'];
 
 function ensureGitignoreEntries(claudeDir) {
   const gitignorePath = path.join(claudeDir, '.gitignore');
@@ -175,7 +175,12 @@ process.stdin.on('end', () => {
       || currentState.status !== lastVerified.status
       || currentState.diffHash !== lastVerified.diffHash;
 
-    if (!hasPending && !stateChanged) return;
+    const verifyFailedPath = path.join(claudeDir, 'verify_failed');
+
+    if (!hasPending && !stateChanged) {
+      try { fs.unlinkSync(verifyFailedPath); } catch { /* ok */ }
+      return;
+    }
 
     const config = getVerifyConfig(cwd);
     const commands = Array.isArray(config.commands) ? config.commands : [];
@@ -201,6 +206,7 @@ process.stdin.on('end', () => {
 
     if (allPassed) {
       if (hasPending) try { fs.unlinkSync(pendingPath); } catch { /* ok */ }
+      try { fs.unlinkSync(verifyFailedPath); } catch { /* ok */ }
       saveLastVerifiedState(claudeDir, currentState);
       return;
     }
@@ -237,6 +243,7 @@ process.stdin.on('end', () => {
         lines.push('');
       }
     }
+    try { fs.writeFileSync(verifyFailedPath, '', 'utf8'); } catch { /* ok */ }
     process.stderr.write(lines.join('\n'));
     process.exit(2);
   } catch (err) {

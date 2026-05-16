@@ -14,6 +14,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const crypto = require('crypto');
 const { execSync } = require('child_process');
 const { logError } = require('./hook-logger');
 
@@ -64,6 +65,7 @@ function isVerifyEnabled(cwd) {
 function getGitState(cwd) {
   let head = '';
   let status = '';
+  let diffHash = '';
   try {
     head = execSync('git rev-parse HEAD', {
       encoding: 'utf8',
@@ -82,7 +84,18 @@ function getGitState(cwd) {
   } catch {
     // not a git repo
   }
-  return { head, status };
+  try {
+    const diff = execSync('git diff HEAD', {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+      cwd,
+      maxBuffer: 10 * 1024 * 1024,
+    });
+    diffHash = crypto.createHash('sha256').update(diff).digest('hex');
+  } catch {
+    // no commits yet, not a git repo, or diff too large
+  }
+  return { head, status, diffHash };
 }
 
 const GITIGNORE_ENTRIES = ['changes_pending', 'pre_tool_state', 'last_verified_state'];
@@ -134,7 +147,7 @@ process.stdin.on('end', () => {
 
       if (before) {
         const after = getGitState(cwd);
-        changed = after.head !== before.head || after.status !== before.status;
+        changed = after.head !== before.head || after.status !== before.status || after.diffHash !== before.diffHash;
       } else {
         // Corrupt snapshot — fall back to tool-based heuristic
         changed = FILE_MODIFYING_TOOLS.has(toolName);

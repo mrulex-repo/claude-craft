@@ -9,6 +9,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const crypto = require('crypto');
 const { execSync } = require('child_process');
 const { logError } = require('./hook-logger');
 
@@ -72,6 +73,7 @@ function isVerifyEnabled(cwd) {
 function getGitState(cwd) {
   let head = '';
   let status = '';
+  let diffHash = '';
   try {
     head = execSync('git rev-parse HEAD', {
       encoding: 'utf8',
@@ -90,7 +92,18 @@ function getGitState(cwd) {
   } catch {
     // not a git repo
   }
-  return { head, status };
+  try {
+    const diff = execSync('git diff HEAD', {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+      cwd,
+      maxBuffer: 10 * 1024 * 1024,
+    });
+    diffHash = crypto.createHash('sha256').update(diff).digest('hex');
+  } catch {
+    // no commits yet, not a git repo, or diff too large
+  }
+  return { head, status, diffHash };
 }
 
 let input = '';

@@ -25,7 +25,7 @@ description: Generate JIRA commit message and auto-stage all files
 
 3. **The Approval Gate:**
    - If **Auto Approval** (from Configuration above) is `true`: skip this step and proceed directly to Execution Logic using Standard Approval.
-   - Otherwise: summarize what will be committed (everything currently changed), present the drafted message, and **wait for input.**
+   - Otherwise: summarize what will be committed (everything currently changed), present the drafted message, and **stop — wait for the user's reply in this turn before proceeding. A "yes" given earlier in the conversation for a previous commit does NOT carry over; you must receive fresh approval for this specific commit.**
 
 4. **Execution Logic:**
    - **Standard Approval ("yes", "y", "go"):**

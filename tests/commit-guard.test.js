@@ -93,6 +93,19 @@ describe('commit-guard', () => {
     assert.equal(fs.existsSync(markerPath()), false);
   });
 
+  it('PostToolUse deletes marker when approve-commit and git commit run as combined command', () => {
+    fs.writeFileSync(markerPath(), 'somehash');
+
+    const { exitCode } = spawnHook('commit-guard.js', {
+      hook_event_name: 'PostToolUse',
+      tool_name: 'Bash',
+      tool_input: { command: 'node ~/.claude-craft/approve-commit.js --from-workflow && git commit -m "test"' },
+      cwd: repoDir,
+    }, { env: env() });
+    assert.equal(exitCode, 0);
+    assert.equal(fs.existsSync(markerPath()), false);
+  });
+
   it('PostToolUse is silent when marker file is already gone', () => {
     const { exitCode } = spawnHook('commit-guard.js', {
       hook_event_name: 'PostToolUse',

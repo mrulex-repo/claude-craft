@@ -106,7 +106,9 @@ function isGitCommit(command) {
 }
 
 function isApproveCommit(command) {
-  return /approve-commit\.js/.test(command || '');
+  // Match only when approve-commit.js is being invoked as a node script,
+  // not when it appears as text inside a commit message or quoted argument.
+  return /(?:^|&&|;|\|)\s*node\s+\S*approve-commit\.js\b/.test(command || '');
 }
 
 let input = '';
@@ -121,17 +123,22 @@ process.stdin.on('end', () => {
 
     if (tool_name !== 'Bash') return;
 
-    if (isApproveCommit(tool_input?.command)) {
+    const commandHasApproveCommit = isApproveCommit(tool_input?.command);
+    const commandHasGitCommit = isGitCommit(tool_input?.command);
+
+    if (commandHasApproveCommit) {
       if (!/--from-workflow/.test(tool_input?.command)) {
         process.stderr.write(
           'approve-commit blocked: must be called through the /commit-msg workflow.\n'
         );
         process.exit(2);
       }
-      return; // flag present — allow through
+      // Allow PreToolUse through; for PostToolUse only fall through if command
+      // also ran git commit (combined call), so the marker gets cleaned up.
+      if (hook_event_name !== 'PostToolUse' || !commandHasGitCommit) return;
     }
 
-    if (!isGitCommit(tool_input?.command)) return;
+    if (!commandHasGitCommit) return;
     if (isAutoApprovalEnabled()) return;
 
     const markerPath = getMarkerPath(cwd);

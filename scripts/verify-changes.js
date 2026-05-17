@@ -223,21 +223,30 @@ process.stdin.on('end', () => {
       const prefix = ls.length > 100 ? `[...truncated, showing from first error in last 100 lines]\n` : '';
       return prefix + slice.join('\n');
     };
+    const truncate = (str, n = 100) => {
+      const ls = str.trimEnd().split('\n');
+      return ls.length > n ? `[...truncated, showing last ${n} lines]\n` + ls.slice(-n).join('\n') : str.trimEnd();
+    };
     const lines = ['Verification failed. Fix the errors before finishing.\n'];
     for (const r of results) {
       if (!r.passed) {
         lines.push(`Command: ${r.command} (exit ${r.exitCode})`);
         const outRelevant = extractRelevant(r.stdout);
         const errRelevant = extractRelevant(r.stderr);
-        if (outRelevant) lines.push(outRelevant);
-        if (errRelevant) lines.push(errRelevant);
-        // Fallback: no error pattern matched — show last 100 lines of whichever has content
+        if (outRelevant) {
+          lines.push(outRelevant);
+        } else if (r.stdout.trim() && errRelevant) {
+          // stdout has no error-pattern lines but does have content (e.g. prettier [warn] lines);
+          // show it as context since the error explanation is in stderr
+          lines.push(truncate(r.stdout));
+        }
+        if (errRelevant) {
+          lines.push(errRelevant);
+        }
+        // Fallback: no error pattern matched in either stream — show whichever has content
         if (!outRelevant && !errRelevant) {
           const fallback = r.stderr.trim() ? r.stderr : r.stdout;
-          if (fallback.trim()) {
-            const ls = fallback.trimEnd().split('\n');
-            lines.push(ls.length > 100 ? `[...truncated, showing last 100 lines]\n` + ls.slice(-100).join('\n') : fallback.trimEnd());
-          }
+          if (fallback.trim()) lines.push(truncate(fallback));
         }
         lines.push('');
       }
